@@ -7,13 +7,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"token-bench/streamlog"
 )
 
 const (
-	SchemaVersion       = 3
-	legacySchemaVersion = 2
-	unknownModel        = "unknown-model"
-	unknownThinking     = "unknown-thinking"
+	SchemaVersion         = 4
+	previousSchemaVersion = 3
+	legacySchemaVersion   = 2
+	unknownModel          = "unknown-model"
+	unknownThinking       = "unknown-thinking"
 )
 
 // TokenCount contains the token usage dimensions recorded for a run.
@@ -31,6 +34,7 @@ type Result struct {
 	Task           string     `json:"task"`
 	Language       string     `json:"language"`
 	Harness        string     `json:"harness"`
+	Arm            string     `json:"arm,omitempty"`
 	Model          string     `json:"model"`
 	ThinkingBudget string     `json:"thinkingBudget"`
 	SkillsDir      string     `json:"skillsDir,omitempty"`
@@ -40,7 +44,17 @@ type Result struct {
 	Passed         bool       `json:"passed"`
 	Corrections    int        `json:"corrections"`
 	Tokens         TokenCount `json:"tokens"`
-	Error          string     `json:"error,omitempty"`
+	// DurationSeconds is the wall-clock time from agent start to the end of the
+	// final validation, including every feedback round. Absent in older results.
+	DurationSeconds float64 `json:"durationSeconds,omitempty"`
+	// CostUSD is estimated from Tokens with the repository price table.
+	CostUSD *float64 `json:"costUsd,omitempty"`
+	// ReportedCostUSD is the cost reported by the harness itself (Claude Code's
+	// total_cost_usd), when available.
+	ReportedCostUSD *float64 `json:"reportedCostUsd,omitempty"`
+	// ToolUsage summarizes tool calls parsed from the harness stream log.
+	ToolUsage *streamlog.Summary `json:"toolUsage,omitempty"`
+	Error     string             `json:"error,omitempty"`
 }
 
 // Write persists one result as indented JSON.
@@ -81,13 +95,15 @@ func Read(path string) (Result, error) {
 
 // Validate checks the persisted schema and required metadata.
 func (r Result) Validate() error {
-	if r.SchemaVersion != legacySchemaVersion && r.SchemaVersion != SchemaVersion {
+	switch r.SchemaVersion {
+	case legacySchemaVersion, previousSchemaVersion, SchemaVersion:
+	default:
 		return fmt.Errorf("unsupported result schema version %d", r.SchemaVersion)
 	}
 	if r.Task == "" || r.Language == "" || r.Harness == "" {
 		return errors.New("task, language, and harness are required")
 	}
-	if r.SchemaVersion == SchemaVersion && (r.Model == "" || r.ThinkingBudget == "") {
+	if r.SchemaVersion >= previousSchemaVersion && (r.Model == "" || r.ThinkingBudget == "") {
 		return errors.New("model and thinkingBudget are required")
 	}
 	if r.SkillsDir != "" && !filepath.IsAbs(r.SkillsDir) {
@@ -95,6 +111,9 @@ func (r Result) Validate() error {
 	}
 	if r.Run < 1 || r.RequestedRuns < 1 || r.Run > r.RequestedRuns {
 		return errors.New("run must be within requestedRuns")
+	}
+	if r.DurationSeconds < 0 {
+		return errors.New("durationSeconds cannot be negative")
 	}
 	if r.Corrections < 0 {
 		return errors.New("corrections cannot be negative")
