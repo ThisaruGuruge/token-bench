@@ -34,6 +34,8 @@ type reportData struct {
 	TotalRuns       int
 	FailedRuns      int
 	Tasks           []taskData
+	// Summary is the arm x scenario table; medians include failed runs.
+	Summary []SummaryRow
 }
 
 type taskData struct {
@@ -201,7 +203,7 @@ func aggregate(discovered []discoveredResult) (reportData, error) {
 	skillsDirs := make(map[string]struct{})
 	promptTemplates := make(map[string]string)
 	byTask := make(map[string]map[variantKey][]result.Result)
-	data := reportData{TotalRuns: len(discovered)}
+	data := reportData{TotalRuns: len(discovered), Summary: summarizeArms(discovered)}
 	for _, item := range discovered {
 		current := item.value
 		promptTemplate := current.PromptTemplate
