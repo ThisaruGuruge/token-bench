@@ -10,11 +10,14 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 	"unicode"
 
 	"token-bench/harness"
 	"token-bench/language"
+	"token-bench/pricing"
 	benchresult "token-bench/result"
+	"token-bench/streamlog"
 	"token-bench/task"
 	"token-bench/tracing"
 )
@@ -142,6 +145,7 @@ func run(arguments []string) (exitCode int) {
 			Task:           taskDefinition.Name,
 			Language:       configuration.language,
 			Harness:        configuration.harness,
+			Arm:            configuration.arm,
 			SkillsDir:      configuration.skillsDir,
 			PromptTemplate: promptTemplate,
 			Run:            run,
@@ -238,7 +242,16 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 		if err := agent.End(); err != nil {
 			result.Error = joinErrors(result.Error, err.Error())
 		}
+		if reported, ok := agent.ReportedCostUSD(); ok {
+			result.ReportedCostUSD = &reported
+		}
+		applyEstimatedCost(&result)
+		if err := attachToolUsage(&result, filepath.Join(directory, harness.ClaudeStreamArtifact)); err != nil {
+			result.Error = joinErrors(result.Error, err.Error())
+		}
 	}()
+	started := time.Now()
+	defer func() { result.DurationSeconds = time.Since(started).Seconds() }()
 
 	requirements, err := handle.Prompt()
 	if err != nil {
@@ -297,6 +310,28 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 			return result
 		}
 	}
+}
+
+// applyEstimatedCost fills CostUSD from the price table; models missing from
+// the table leave it unset.
+func applyEstimatedCost(result *runResult) {
+	if cost, ok := pricing.Cost(result.Model, result.Tokens); ok {
+		result.CostUSD = &cost
+	}
+}
+
+// attachToolUsage summarizes the Claude stream log at path. A missing log is
+// not an error: other harnesses write none.
+func attachToolUsage(result *runResult, path string) error {
+	summary, err := streamlog.AnalyzeFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("analyze stream log: %w", err)
+	}
+	result.ToolUsage = &summary
+	return nil
 }
 
 func selectTask(name string) (task.Task, error) {
