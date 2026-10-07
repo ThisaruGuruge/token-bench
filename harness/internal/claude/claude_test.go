@@ -15,6 +15,17 @@ func TestReportsConfiguredModelAndThinkingBudget(t *testing.T) {
 	}
 }
 
+func TestModelOverrideIsReportedAndPassedToClaude(t *testing.T) {
+	agent := New(Config{Model: "sonnet"})
+	if agent.Model() != "sonnet" {
+		t.Fatalf("unexpected model %q", agent.Model())
+	}
+	arguments := agent.startArguments()
+	if arguments[0] != "--model" || arguments[1] != "sonnet" {
+		t.Fatalf("model was not passed to claude: %#v", arguments[:2])
+	}
+}
+
 func TestStartArgumentsUseStreamingPrintMode(t *testing.T) {
 	agent := New(Config{})
 	agent.pluginPath = "/tmp/plugin with spaces"

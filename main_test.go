@@ -98,6 +98,32 @@ func TestParseOptions(t *testing.T) {
 	}
 }
 
+func TestParseModelAndArm(t *testing.T) {
+	parsed, err := parseOptions([]string{"claim-check", "go", "claude", "--model=sonnet", "--arm", "B"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.model != "sonnet" || parsed.arm != "B" {
+		t.Fatalf("unexpected options: %+v", parsed)
+	}
+	parsed, err = parseOptions([]string{"claim-check", "go", "claude"})
+	if err != nil || parsed.model != "" || parsed.arm != "" {
+		t.Fatalf("defaults should be empty: %+v, %v", parsed, err)
+	}
+	for _, arguments := range [][]string{
+		{"claim-check", "go", "claude", "--model="},
+		{"claim-check", "go", "claude", "--model"},
+		{"claim-check", "go", "claude", "--model=a", "--model=b"},
+		{"claim-check", "go", "pi", "--model=sonnet"},
+		{"claim-check", "go", "claude", "--arm="},
+		{"claim-check", "go", "claude", "--arm=A", "--arm", "B"},
+	} {
+		if _, err := parseOptions(arguments); err == nil {
+			t.Errorf("parseOptions(%q) unexpectedly succeeded", arguments)
+		}
+	}
+}
+
 func TestParsePhoenixEndpoint(t *testing.T) {
 	parsed, err := parseOptions([]string{"claim-check", "go", "claude", "--phoenix-endpoint", "http://localhost:6006"})
 	if err != nil {

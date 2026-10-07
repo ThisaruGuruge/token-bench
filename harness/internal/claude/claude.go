@@ -22,7 +22,7 @@ import (
 var appendSystemPrompt string
 
 const (
-	model              = "opus"
+	defaultModel       = "opus"
 	effort             = "high"
 	streamArtifactName = "claude-stream.jsonl"
 	stderrArtifactName = "claude-stderr.log"
@@ -32,6 +32,8 @@ const (
 type Config struct {
 	SkillsDir string
 	Status    chan string
+	// Model is the Claude Code model alias or id. Empty selects the default.
+	Model string
 }
 
 // TokenCount contains usage dimensions reported by Claude Code.
@@ -111,11 +113,14 @@ type modelUsage struct {
 
 // New initializes the private Claude Code implementation.
 func New(config Config) *claude {
+	if config.Model == "" {
+		config.Model = defaultModel
+	}
 	return &claude{config: config}
 }
 
 func (c *claude) Model() string {
-	return model
+	return c.config.Model
 }
 
 func (c *claude) ThinkingBudget() string {
@@ -335,7 +340,7 @@ func findSkillDirectories(root string) ([]string, error) {
 
 func (c *claude) startArguments() []string {
 	arguments := []string{
-		"--model", model,
+		"--model", c.config.Model,
 		"--effort", effort,
 		"--dangerously-skip-permissions",
 		"--disallowedTools", "AskUserQuestion",

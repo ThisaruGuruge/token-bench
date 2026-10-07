@@ -11,7 +11,7 @@ import (
 
 func TestTraceAdapterMapsAssistantEventsAndToolResults(t *testing.T) {
 	benchmark := &recordingBenchmark{}
-	adapter := newTraceAdapter(benchmark, model)
+	adapter := newTraceAdapter(benchmark, defaultModel)
 	adapter.SetNextInput("build the server")
 	processTraceEvent(t, adapter, "assistant", `{
 		"type":"assistant","message":{"content":[
@@ -46,7 +46,7 @@ func TestTraceAdapterMapsAssistantEventsAndToolResults(t *testing.T) {
 
 func TestTraceAdapterEndsTurnForEveryResult(t *testing.T) {
 	benchmark := &recordingBenchmark{}
-	adapter := newTraceAdapter(benchmark, model)
+	adapter := newTraceAdapter(benchmark, defaultModel)
 	processTraceEvent(t, adapter, "assistant", `{"type":"assistant","message":{"content":[{"type":"tool_use","id":"bash","name":"Bash","input":{"command":"false"}}]}}`)
 	processTraceEvent(t, adapter, "user", `{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"bash","content":"exit 1","is_error":true}]}}`)
 	processTraceEvent(t, adapter, "result", `{"type":"result","subtype":"error","is_error":true,"errors":["model failed"],"origin":{"kind":"task-notification"}}`)
@@ -85,7 +85,7 @@ func TestTraceAdapterRecordsConcreteAndFallbackModelUsage(t *testing.T) {
 
 func TestTraceAdapterMapsKnownClaudeTools(t *testing.T) {
 	benchmark := &recordingBenchmark{}
-	adapter := newTraceAdapter(benchmark, model)
+	adapter := newTraceAdapter(benchmark, defaultModel)
 	processTraceEvent(t, adapter, "assistant", `{
 		"type":"assistant","message":{"content":[
 			{"type":"tool_use","id":"read","name":"Read","input":{"file_path":"main.go","offset":2,"limit":10}},

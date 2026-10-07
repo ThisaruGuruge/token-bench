@@ -19,7 +19,7 @@ import (
 	"token-bench/tracing"
 )
 
-// TODO: add optional harness flags (system prompt, model, thinking)
+// TODO: add optional harness flags (system prompt, thinking)
 const hiddenValidationFailure = "hidden validation failed"
 
 const usage = `usage: token-bench <task> <language> <harness> [--n-runs=N] [--target=DIR] [--skills=DIR] [--phoenix-endpoint=URL]
@@ -31,6 +31,8 @@ Implementations:
 
 Notes:
   claude loads --skills as a temporary plugin; global Claude configuration may still be discovered.
+  --model selects the Claude model alias or id (default opus); claude harness only.
+  --arm is a free-text label recorded in result.json and used by token-bench-report for grouping.
   --phoenix-endpoint enables tracing to a locally hosted Arize Phoenix OTLP/HTTP endpoint.
 `
 
@@ -41,6 +43,8 @@ type options struct {
 	runs            int
 	target          string
 	skillsDir       string
+	model           string
+	arm             string
 	phoenixEndpoint string
 }
 
@@ -106,7 +110,7 @@ func run(arguments []string) (exitCode int) {
 		return 2
 	}
 	statusUpdates := make(chan string, 1)
-	harnessConstructor, err := selectHarness(configuration.harness, harness.Config{SkillsDir: configuration.skillsDir, Status: statusUpdates})
+	harnessConstructor, err := selectHarness(configuration.harness, harness.Config{SkillsDir: configuration.skillsDir, Status: statusUpdates, Model: configuration.model})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
@@ -382,6 +386,40 @@ func parseOptions(arguments []string) (options, error) {
 				return options{}, errors.New("--skills requires a value")
 			}
 			parsed.skillsDir = arguments[index]
+		case strings.HasPrefix(argument, "--model="):
+			if parsed.model != "" {
+				return options{}, errors.New("--model may only be specified once")
+			}
+			parsed.model = strings.TrimPrefix(argument, "--model=")
+			if parsed.model == "" {
+				return options{}, errors.New("--model requires a value")
+			}
+		case argument == "--model":
+			if parsed.model != "" {
+				return options{}, errors.New("--model may only be specified once")
+			}
+			index++
+			if index == len(arguments) || arguments[index] == "" {
+				return options{}, errors.New("--model requires a value")
+			}
+			parsed.model = arguments[index]
+		case strings.HasPrefix(argument, "--arm="):
+			if parsed.arm != "" {
+				return options{}, errors.New("--arm may only be specified once")
+			}
+			parsed.arm = strings.TrimPrefix(argument, "--arm=")
+			if parsed.arm == "" {
+				return options{}, errors.New("--arm requires a value")
+			}
+		case argument == "--arm":
+			if parsed.arm != "" {
+				return options{}, errors.New("--arm may only be specified once")
+			}
+			index++
+			if index == len(arguments) || arguments[index] == "" {
+				return options{}, errors.New("--arm requires a value")
+			}
+			parsed.arm = arguments[index]
 		case strings.HasPrefix(argument, "--phoenix-endpoint="):
 			if parsed.phoenixEndpoint != "" {
 				return options{}, errors.New("--phoenix-endpoint may only be specified once")
@@ -417,6 +455,9 @@ func parseOptions(arguments []string) (options, error) {
 		return options{}, errors.New("task, language, and harness are required")
 	}
 	parsed.task, parsed.language, parsed.harness = positionals[0], positionals[1], positionals[2]
+	if parsed.model != "" && parsed.harness != "claude" {
+		return options{}, errors.New("--model is only supported by the claude harness")
+	}
 	return parsed, nil
 }
 
