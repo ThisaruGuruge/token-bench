@@ -209,3 +209,39 @@ func writeTestResult(t *testing.T, path string, value result.Result) {
 		t.Fatal(err)
 	}
 }
+
+func TestGenerateGroupsRunsByArm(t *testing.T) {
+	root := t.TempDir()
+	for index, arm := range []string{"A", "A", "D", ""} {
+		writeTestResult(t, filepath.Join(root, "run", string(rune('a'+index)), "result.json"), result.Result{
+			SchemaVersion: result.SchemaVersion, Task: "router", Language: "go", Harness: "claude", Arm: arm,
+			Model: "sonnet", ThinkingBudget: "high", Run: 1, RequestedRuns: 1, Passed: true,
+			Tokens: result.TokenCount{Total: 100 * (index + 1)},
+		})
+	}
+	var output bytes.Buffer
+	if err := Generate([]string{root}, &output); err != nil {
+		t.Fatal(err)
+	}
+	html := output.String()
+	for _, expected := range []string{"Arms:", "<td>A</td>", "<td>D</td>", "<td>-</td>", "[A] go", "[D] go", "3 language/skills/harness/model/thinking-budget variants"} {
+		if !strings.Contains(html, expected) {
+			t.Errorf("report does not contain %q", expected)
+		}
+	}
+}
+
+func TestGenerateOmitsArmsLineWithoutArms(t *testing.T) {
+	root := t.TempDir()
+	writeTestResult(t, filepath.Join(root, "result.json"), result.Result{
+		SchemaVersion: result.SchemaVersion, Task: "router", Language: "go", Harness: "pi",
+		Model: "m", ThinkingBudget: "t", Run: 1, RequestedRuns: 1, Passed: true,
+	})
+	var output bytes.Buffer
+	if err := Generate([]string{root}, &output); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(output.String(), "Arms:") {
+		t.Fatal("arms line should be absent when no run has an arm")
+	}
+}

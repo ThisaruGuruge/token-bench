@@ -44,6 +44,7 @@
 <main>
   <h1>Token Bench Report</h1>
   <div class="muted">Harnesses: {{range $index, $harness := .Harnesses}}{{if $index}} · {{end}}<strong>{{$harness}}</strong>{{end}} · {{.TotalRuns}} runs</div>
+  {{if .Arms}}<div class="muted">Arms: {{range $index, $arm := .Arms}}{{if $index}} · {{end}}<strong>{{$arm}}</strong>{{end}}</div>{{end}}
   <div class="muted">Models: {{range $index, $model := .Models}}{{if $index}} · {{end}}<strong>{{$model}}</strong>{{end}}</div>
   <div class="muted">Thinking budgets: {{range $index, $budget := .ThinkingBudgets}}{{if $index}} · {{end}}<strong>{{$budget}}</strong>{{end}}</div>
   <div class="muted">Skills: {{range $index, $skills := .SkillsDirs}}{{if $index}} · {{end}}<strong>{{$skills}}</strong>{{end}}</div>
@@ -74,7 +75,7 @@
           <line class="axis" x1="500" x2="1150" y1="{{.AxisY}}" y2="{{.AxisY}}"></line>
           {{range .Boxes}}
           <g transform="translate(0,{{.Y}})">
-            <text class="language" x="0" y="-9" dominant-baseline="middle">{{.Language}}</text>
+            <text class="language" x="0" y="-9" dominant-baseline="middle">{{if .Arm}}[{{.Arm}}] {{end}}{{.Language}}</text>
             <text class="skills" x="0" y="15" dominant-baseline="middle">{{.SkillsDir}} · {{.Harness}} · {{.Model}} · {{.ThinkingBudget}}</text>
             {{if .Available}}
             <line class="row-scale" x1="500" x2="1150" y1="0" y2="0"></line>
@@ -97,10 +98,10 @@
     </div>
 
     <table>
-      <thead><tr><th>Language</th><th>Skills</th><th>Harness</th><th>Model</th><th>Thinking budget</th><th>Successful</th><th>Failed</th><th>Pass rate</th><th>Avg fixes</th><th>Avg input</th><th>Avg output</th><th>Avg total</th></tr></thead>
+      <thead><tr><th>Arm</th><th>Language</th><th>Skills</th><th>Harness</th><th>Model</th><th>Thinking budget</th><th>Successful</th><th>Failed</th><th>Pass rate</th><th>Avg fixes</th><th>Avg input</th><th>Avg output</th><th>Avg total</th></tr></thead>
       <tbody>
         {{range .Languages}}<tr>
-          <td>{{.Name}}</td><td>{{.SkillsDir}}</td><td>{{.Harness}}</td><td>{{.Model}}</td><td>{{.ThinkingBudget}}</td><td>{{.Successful}}</td><td>{{.Failed}}</td><td>{{printf "%.1f" .PassRate}}%</td>
+          <td>{{.ArmLabel}}</td><td>{{.Name}}</td><td>{{.SkillsDir}}</td><td>{{.Harness}}</td><td>{{.Model}}</td><td>{{.ThinkingBudget}}</td><td>{{.Successful}}</td><td>{{.Failed}}</td><td>{{printf "%.1f" .PassRate}}%</td>
           <td>{{printf "%.1f" .AvgCorrections}}</td><td>{{printf "%.1f" .AvgInput}}</td><td>{{printf "%.1f" .AvgOutput}}</td><td>{{printf "%.1f" .AvgTotal}}</td>
         </tr>{{end}}
       </tbody>

@@ -27,6 +27,7 @@ type discoveredResult struct {
 
 type reportData struct {
 	Harnesses       []string
+	Arms            []string
 	Models          []string
 	ThinkingBudgets []string
 	SkillsDirs      []string
@@ -47,6 +48,7 @@ type taskData struct {
 
 type languageData struct {
 	Name           string
+	Arm            string
 	SkillsDir      string
 	Harness        string
 	Model          string
@@ -63,6 +65,9 @@ type languageData struct {
 	outputs        []float64
 	totals         []float64
 }
+
+// ArmLabel is the arm shown in tables; "-" when the run recorded none.
+func (d languageData) ArmLabel() string { return armLabel(d.Arm) }
 
 type chartData struct {
 	Name       string
@@ -81,6 +86,7 @@ type tickData struct {
 
 type boxData struct {
 	Language        string
+	Arm             string
 	SkillsDir       string
 	Harness         string
 	Model           string
@@ -179,6 +185,7 @@ func discover(paths []string) ([]discoveredResult, error) {
 }
 
 type variantKey struct {
+	arm            string
 	language       string
 	skillsDir      string
 	harness        string
@@ -188,6 +195,7 @@ type variantKey struct {
 
 func aggregate(discovered []discoveredResult) (reportData, error) {
 	harnesses := make(map[string]struct{})
+	arms := make(map[string]struct{})
 	models := make(map[string]struct{})
 	thinkingBudgets := make(map[string]struct{})
 	skillsDirs := make(map[string]struct{})
@@ -209,6 +217,9 @@ func aggregate(discovered []discoveredResult) (reportData, error) {
 		}
 		promptTemplates[current.Task] = promptTemplate
 		harnesses[current.Harness] = struct{}{}
+		if current.Arm != "" {
+			arms[current.Arm] = struct{}{}
+		}
 		models[current.Model] = struct{}{}
 		thinkingBudgets[current.ThinkingBudget] = struct{}{}
 		skillsDirs[current.SkillsDir] = struct{}{}
@@ -219,12 +230,13 @@ func aggregate(discovered []discoveredResult) (reportData, error) {
 			byTask[current.Task] = make(map[variantKey][]result.Result)
 		}
 		key := variantKey{
-			language: current.Language, skillsDir: current.SkillsDir, harness: current.Harness,
+			arm: current.Arm, language: current.Language, skillsDir: current.SkillsDir, harness: current.Harness,
 			model: current.Model, thinkingBudget: current.ThinkingBudget,
 		}
 		byTask[current.Task][key] = append(byTask[current.Task][key], current)
 	}
 	data.Harnesses = sortedKeys(harnesses)
+	data.Arms = sortedKeys(arms)
 	data.Models = sortedKeys(models)
 	data.ThinkingBudgets = sortedKeys(thinkingBudgets)
 	for _, skillsDir := range sortedKeys(skillsDirs) {
@@ -253,7 +265,7 @@ func aggregate(discovered []discoveredResult) (reportData, error) {
 
 func summarizeLanguage(key variantKey, runs []result.Result) languageData {
 	value := languageData{
-		Name: key.language, SkillsDir: skillsLabel(key.skillsDir), Harness: key.harness,
+		Name: key.language, Arm: key.arm, SkillsDir: skillsLabel(key.skillsDir), Harness: key.harness,
 		Model: key.model, ThinkingBudget: key.thinkingBudget, Runs: len(runs),
 	}
 	for _, run := range runs {
@@ -316,6 +328,7 @@ func makeChart(name string, languages []languageData, metric func(languageData) 
 		deviationEndX := scale(min(maximum, mean+deviation))
 		chart.Boxes = append(chart.Boxes, boxData{
 			Language:        language.Name,
+			Arm:             language.Arm,
 			SkillsDir:       language.SkillsDir,
 			Harness:         language.Harness,
 			Model:           language.Model,
@@ -366,6 +379,13 @@ func quantile(ordered []float64, percentile float64) float64 {
 	return ordered[lower]*(1-weight) + ordered[upper]*weight
 }
 
+func armLabel(arm string) string {
+	if arm == "" {
+		return "-"
+	}
+	return arm
+}
+
 func skillsLabel(path string) string {
 	if path == "" {
 		return "No skills"
@@ -379,6 +399,9 @@ func sortedVariantKeys(values map[variantKey][]result.Result) []variantKey {
 		keys = append(keys, key)
 	}
 	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].arm != keys[j].arm {
+			return keys[i].arm < keys[j].arm
+		}
 		if keys[i].language != keys[j].language {
 			return keys[i].language < keys[j].language
 		}
