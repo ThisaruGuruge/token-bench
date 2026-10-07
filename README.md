@@ -6,7 +6,7 @@
 
 | Dimension | Values |
 | --- | --- |
-| Scenarios | `claim-check`, `content-based-router`, `content-enricher`, `dead-letter-channel`, `multi-consumer`, `scatter-gather` |
+| Scenarios | `checkout-sync`, `claim-check`, `content-based-router`, `content-enricher`, `dead-letter-channel`, `multi-consumer`, `scatter-gather` |
 | Languages | `ballerina`, `go`, `java`, `python` |
 | Harnesses | `claude`, `pi` |
 
@@ -23,7 +23,7 @@
   - Go: `go`
   - Java: JDK 21 and `mvn`
   - Python: `uv` with Python 3.12 available
-- Docker with a running daemon for scenarios backed by Redis, PostgreSQL, RabbitMQ, or Kafka (`claim-check`, `content-enricher`, `dead-letter-channel`, and `multi-consumer`)
+- Docker with a running daemon for scenarios backed by Redis, PostgreSQL, MySQL, RabbitMQ, or Kafka (`checkout-sync`, `claim-check`, `content-enricher`, `dead-letter-channel`, and `multi-consumer`)
 - Optional: a local [Arize Phoenix](https://phoenix.arize.com/) instance for tracing
 
 Check that the required commands are available, for example:
