@@ -147,6 +147,8 @@ Options:
 | `--n-runs=N` | `1` | Number of independent runs |
 | `--target=DIR` | temporary directory | Directory in which generated projects and results are retained |
 | `--skills=DIR` | none | Skills directory supplied to the harness |
+| `--model=NAME` | `opus` | Claude model alias or id (Claude harness only) |
+| `--arm=LABEL` | none | Free-text label (for example `A`..`E`) recorded in `result.json`; `token-bench-report` groups and labels by it |
 | `--phoenix-endpoint=URL` | disabled | Local Phoenix OTLP/HTTP endpoint (Claude only) |
 
 Options also accept a separate value, such as `--target ./results`. Claude loads `--skills` as a temporary plugin; its global configuration may still be discovered. The Pi harness adds the supplied skill directory to Pi's startup configuration.
@@ -156,6 +158,8 @@ If `--target` is omitted, the runner creates a temporary directory and prints it
 ## Results and reports
 
 Every run gets its own directory beneath the target and contains a `result.json` plus harness stream and stderr artifacts. The final TUI table reports validation status, corrective feedback count, token usage, and any error.
+
+`result.json` (schema version 4) also records `arm`, `durationSeconds` (agent start to final validation, including feedback rounds), `costUsd` (estimated from tokens with the price table in `pricing/`; verify the table before trusting absolute numbers), `reportedCostUsd` (Claude Code's own `total_cost_usd`, when present) and `toolUsage` (tool-call counts per tool and per family, plus assistant turns, parsed from `claude-stream.jsonl` by `streamlog/`). Schema versions 2 and 3 remain readable.
 
 Build an HTML report by recursively collecting results from one or more paths:
 
