@@ -333,3 +333,29 @@ func RepoCommit(repo string) (commit, source string) {
 	}
 	return "", "no git metadata"
 }
+
+const defaultSkillsRepoSuffix = "Projects/Ballerina/cli-improvements/benchmark/reference/ballerina-skills"
+
+// ArmsDirectory resolves the arms directory: the flag, $TOKEN_BENCH_ARMS_DIR, then ./arms.
+func ArmsDirectory(flagValue string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	if fromEnv := os.Getenv("TOKEN_BENCH_ARMS_DIR"); fromEnv != "" {
+		return fromEnv
+	}
+	return "arms"
+}
+
+// SkillsRepository resolves the skills checkout: the flag, $TOKEN_BENCH_SKILLS_REPO,
+// then the pinned reference snapshot under the home directory.
+func SkillsRepository(flagValue string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	if fromEnv := os.Getenv("TOKEN_BENCH_SKILLS_REPO"); fromEnv != "" {
+		return fromEnv
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, defaultSkillsRepoSuffix)
+}

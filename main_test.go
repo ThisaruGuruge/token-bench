@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"token-bench/harness"
+	"token-bench/matrix"
 	benchresult "token-bench/result"
 )
 
@@ -284,4 +285,15 @@ func TestOperationalFailureFailsBenchmarkProcess(t *testing.T) {
 
 func harnessTokenCount(input, output int) benchresult.TokenCount {
 	return benchresult.TokenCount{Input: input, Output: output}
+}
+
+func TestMatrixScenarioListMatchesTheRunner(t *testing.T) {
+	for _, name := range matrix.KnownScenarios {
+		if _, err := selectTask(name); err != nil {
+			t.Errorf("matrix lists %q but the runner rejects it: %v", name, err)
+		}
+	}
+	if len(matrix.KnownScenarios) != 7 {
+		t.Errorf("runner has 7 scenarios, matrix lists %d", len(matrix.KnownScenarios))
+	}
 }

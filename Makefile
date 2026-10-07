@@ -13,13 +13,16 @@ BENCH_PHOENIX_ENDPOINT := http://localhost:6006/
 BENCH_PROJECT_SKILLS := $(abspath $(HOME)/Projects/skills/skills)
 BENCH_TEST_SKILLS := $(abspath test-skills)
 
-all: token-bench token-bench-report
+all: token-bench token-bench-report token-bench-matrix
 
 token-bench: go.mod $(GO_SOURCES)
 	go build -o $@ .
 
 token-bench-report: go.mod $(GO_SOURCES)
 	go build -o $@ ./cmd/token-bench-report
+
+token-bench-matrix: go.mod $(GO_SOURCES)
+	go build -o $@ ./cmd/token-bench-matrix
 
 run: token-bench
 	@test -n "$(SCENARIO)" || { echo "SCENARIO is required (for example, SCENARIO=content-based-router)" >&2; exit 2; }
@@ -62,4 +65,4 @@ bench: token-bench
 	done
 
 clean:
-	rm -f token-bench token-bench-report
+	rm -f token-bench token-bench-report token-bench-matrix

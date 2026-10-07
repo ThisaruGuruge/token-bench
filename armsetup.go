@@ -12,8 +12,6 @@ import (
 	benchresult "token-bench/result"
 )
 
-const defaultSkillsRepoSuffix = "Projects/Ballerina/cli-improvements/benchmark/reference/ballerina-skills"
-
 // armSetup holds what is resolved once per invocation: the selected arm (nil
 // for an ad-hoc label or no arm) and the versions of the toolchain.
 type armSetup struct {
@@ -35,27 +33,6 @@ func (r armRun) envEntries() []string {
 
 func (r armRun) cleanup() error { return r.env.Cleanup() }
 
-func armsDirectory(configuration options) string {
-	if configuration.armsDir != "" {
-		return configuration.armsDir
-	}
-	if fromEnv := os.Getenv("TOKEN_BENCH_ARMS_DIR"); fromEnv != "" {
-		return fromEnv
-	}
-	return "arms"
-}
-
-func skillsRepository(configuration options) string {
-	if configuration.skillsRepo != "" {
-		return configuration.skillsRepo
-	}
-	if fromEnv := os.Getenv("TOKEN_BENCH_SKILLS_REPO"); fromEnv != "" {
-		return fromEnv
-	}
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, defaultSkillsRepoSuffix)
-}
-
 // newArmSetup resolves --arm against the arm definitions and captures versions.
 func newArmSetup(configuration options, target string) (*armSetup, error) {
 	setup := &armSetup{harness: configuration.harness}
@@ -67,7 +44,7 @@ func newArmSetup(configuration options, target string) (*armSetup, error) {
 	if configuration.arm == "" {
 		return setup, nil
 	}
-	dir := armsDirectory(configuration)
+	dir := arm.ArmsDirectory(configuration.armsDir)
 	if !arm.Exists(dir, configuration.arm) {
 		fmt.Fprintf(os.Stderr, "note: no arm definition %q in %s; using it as an ad-hoc label with no behavior attached\n", configuration.arm, dir)
 		return setup, nil
@@ -91,7 +68,7 @@ func newArmSetup(configuration options, target string) (*armSetup, error) {
 	}
 	resolved, err := arm.Resolve(config, arm.ResolveOptions{
 		ArmsDir:    absoluteDir,
-		SkillsRepo: skillsRepository(configuration),
+		SkillsRepo: arm.SkillsRepository(configuration.skillsRepo),
 		StageDir:   filepath.Join(target, ".token-bench-arms", config.ID),
 	})
 	if err != nil {
