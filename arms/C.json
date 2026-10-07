@@ -1,0 +1,6 @@
+{
+  "id": "C",
+  "label": "bal discover only, minimal hint",
+  "systemPromptFile": "hints/discover-hint.md",
+  "discoverVisible": true
+}

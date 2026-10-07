@@ -1,0 +1,30 @@
+{
+  "phase0": {
+    "description": "First answer: arms A and D, 3 runs each on the checkout-sync scenario (Sonnet).",
+    "arms": ["A", "D"],
+    "scenarios": ["checkout-sync"],
+    "runs": 3,
+    "model": "sonnet"
+  },
+  "phase1": {
+    "description": "Add arms B, C and E on the Phase 0 scenario (Sonnet).",
+    "arms": ["B", "C", "E"],
+    "scenarios": ["checkout-sync"],
+    "runs": 3,
+    "model": "sonnet"
+  },
+  "phase2": {
+    "description": "All arms on every existing scenario (Sonnet). Add the new connector scenarios here once they exist.",
+    "arms": ["A", "B", "C", "D", "E"],
+    "scenarios": ["checkout-sync", "claim-check", "content-based-router", "content-enricher", "dead-letter-channel", "multi-consumer", "scatter-gather"],
+    "runs": 5,
+    "model": "sonnet"
+  },
+  "phase3": {
+    "description": "Opus confirmation subset: all arms on the Phase 0 scenario.",
+    "arms": ["A", "B", "C", "D", "E"],
+    "scenarios": ["checkout-sync"],
+    "runs": 3,
+    "model": "opus"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "D",
+  "label": "ballerina skill (patched to bal discover) plus bal discover",
+  "skills": "skills",
+  "skillsPatch": "patches/ballerina-skill-discover.patch",
+  "skillsRepoCommit": "a87ce03f816b19c5603632a581f0d353a264ec22",
+  "discoverVisible": true
+}
