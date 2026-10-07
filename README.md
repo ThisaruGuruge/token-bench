@@ -45,7 +45,8 @@ make all
 This creates:
 
 - `./token-bench` — benchmark runner with a terminal UI
-- `./token-bench-report` — HTML report generator
+- `./token-bench-report` — HTML report generator and CSV exporter
+- `./token-bench-matrix` — arm x scenario x run matrix runner
 
 Remove the built executables with:
 
@@ -148,7 +149,11 @@ Options:
 | `--target=DIR` | temporary directory | Directory in which generated projects and results are retained |
 | `--skills=DIR` | none | Skills directory supplied to the harness |
 | `--model=NAME` | `opus` | Claude model alias or id (Claude harness only) |
-| `--arm=LABEL` | none | Free-text label (for example `A`..`E`) recorded in `result.json`; `token-bench-report` groups and labels by it |
+| `--arm=LABEL` | none | `A`..`E` select an [arm definition](#benchmark-arms-and-the-matrix-runner) from `--arms-dir` and apply it (claude harness only). Any other label is an ad-hoc label: recorded in `result.json` and used for report grouping, with no behavior attached (a note is printed) |
+| `--max-budget-usd=N` | `20` | Per-session spend cap passed to Claude Code; recorded in `result.json` (`environment.maxBudgetUsd`) |
+| `--arms-dir=DIR` | `./arms` (or `$TOKEN_BENCH_ARMS_DIR`) | Directory of arm definitions |
+| `--skills-repo=DIR` | `$TOKEN_BENCH_SKILLS_REPO`, else `~/Projects/Ballerina/cli-improvements/benchmark/reference/ballerina-skills` | Checkout of `ballerina-platform/skills` that arms B, D and E read; never copied into this repository |
+| `--run-number=N`, `--requested-runs=N` | `1`, `--n-runs` | Number recorded for the first run and for the cell's run count (the matrix runner sets them) |
 | `--phoenix-endpoint=URL` | disabled | Local Phoenix OTLP/HTTP endpoint (Claude only) |
 
 Options also accept a separate value, such as `--target ./results`. Claude loads `--skills` as a temporary plugin; its global configuration may still be discovered. The Pi harness adds the supplied skill directory to Pi's startup configuration.
@@ -159,7 +164,7 @@ If `--target` is omitted, the runner creates a temporary directory and prints it
 
 Every run gets its own directory beneath the target and contains a `result.json` plus harness stream and stderr artifacts. The final TUI table reports validation status, corrective feedback count, token usage, and any error.
 
-`result.json` (schema version 4) also records `arm`, `durationSeconds` (agent start to final validation, including feedback rounds), `costUsd` (estimated from tokens with the price table in `pricing/`; verify the table before trusting absolute numbers), `reportedCostUsd` (Claude Code's own `total_cost_usd`, when present) and `toolUsage` (tool-call counts per tool and per family, plus assistant turns, parsed from `claude-stream.jsonl` by `streamlog/`). Schema versions 2 and 3 remain readable.
+`result.json` (schema version 5) also records `environment` (`bal version`, the `bal discover` row of `bal tool list`, Claude Code version, whether `bal discover` was reachable, whether the discover cache was cold, skills repository commit and a content hash of the exact skills or plugin tree the agent received, the appended arm prompt, and the budget cap), `arm`, `durationSeconds` (agent start to final validation, including feedback rounds), `costUsd` (estimated from tokens with the price table in `pricing/`; verify the table before trusting absolute numbers), `reportedCostUsd` (Claude Code's own `total_cost_usd`, when present) and `toolUsage` (tool-call counts per tool and per family, plus assistant turns, parsed from `claude-stream.jsonl` by `streamlog/`). Schema versions 2 to 4 remain readable.
 
 Build an HTML report by recursively collecting results from one or more paths:
 
@@ -173,6 +178,70 @@ Multiple result roots may be supplied:
 ```sh
 ./token-bench-report --output=report.html ./results/baseline ./results/with-skills
 ```
+
+The HTML report starts with an arm x scenario summary table (pass k/n, median tokens, median cost, median duration, median corrections). Medians cover all runs, failed ones included, because a failed run still spent its tokens; cost uses the estimated value and falls back to Claude Code's reported cost. For Google Sheets, export CSVs:
+
+```sh
+./token-bench-report --output=report.html --csv=runs.csv --summary-csv=summary.csv ./results
+```
+
+`runs.csv` has one row per run (arm, scenario, run, model, passed, corrections, token dimensions, cost, duration, tool-call counts for `bal discover`, `bal search`, `bal pull`, web search/fetch, agents, MCP, and the recorded environment). `summary.csv` is the arm x scenario table.
+
+## Benchmark arms and the matrix runner
+
+The `bal discover` benchmark compares five arms. Every arm uses the same model, effort, task prompt, Ballerina version and `--setting-sources ""`; each arm is a JSON file under `arms/`.
+
+| Arm | Agent gets | `bal discover` reachable |
+| --- | --- | --- |
+| A | nothing extra | no |
+| B | the `ballerina` skill (`skills/` of the skills repository), as the harness always loaded it | no |
+| C | `bal discover` plus a fixed three-line hint appended to the system prompt (`arms/hints/discover-hint.md`) | yes |
+| D | the skill with Step 2 (and the other `library`-agent mentions, in Step 4 and `rules/messaging.md`) pointed at `bal discover`, plus `bal discover` | yes |
+| E | the whole skills repository as a Claude Code plugin: skill, `library` agent, MCP server, hooks, and its LSP server | no |
+
+An arm definition (`arms/<ID>.json`) has: `label`; `skills` (a directory relative to the skills repository) or `plugin: true` (the repository root as a plugin; the two are exclusive); `skillsPatch` (a patch applied to a staged copy of `skills`); `systemPromptFile` (text appended to the harness system prompt); `discoverVisible`; `env` (extra environment); `skillsRepoCommit` (the commit the arm was designed against; a different checkout prints a warning). `arms/phases.json` holds the phase presets.
+
+How an arm is applied by `token-bench --arm=X`:
+
+- Skills and plugin: arms B and D go through the existing temporary skills plugin; arm E adds `--plugin-dir <skills repository>` as a second plugin directory. The repository is read in place and never modified. Arm D stages a patched copy under `<target>/.token-bench-arms/D/` on every invocation (`arms/patches/ballerina-skill-discover.patch`, made against skills commit `a87ce03`); if the patch does not apply the run stops with an error naming the likely cause.
+- Hiding `bal discover` (arms A, B, E): each run gets a fresh directory with a `bal` wrapper that forwards everything to the real `bal` except `bal discover ...` and `bal help discover`, which fail with the real "unknown command" message and exit 1, and `bal tool list`, whose discover row is dropped. The directory is prepended to PATH of the `claude` subprocess only; nothing in `~/.ballerina` or the installed tools is touched. Arms C and D use the unmodified PATH.
+- Cold discover cache (all arms): each run gets its own `XDG_CACHE_HOME`, so no run benefits from an earlier run's `bal discover` cache and Central latency stays part of the measured time.
+- Everything is recorded per run in `result.json` (`arm`, `environment`).
+
+An `--arm` label with no definition in the arms directory (for example `--arm=baseline-v2`) is not an error: it is recorded and used for grouping, nothing else changes, and a note is printed. `--arm` combined with `--skills` is rejected, and arm definitions require the claude harness.
+
+Arm E limitations. The plugin's `.mcp.json` and hooks use `${CLAUDE_PLUGIN_ROOT}`, which Claude Code expands to the plugin directory, so loading the repository root with `--plugin-dir` is expected to start the `ballerina-library` MCP server (needs `node` on PATH) and the hooks (need `bash` and `jq`). This has been checked statically only (`claude plugin validate`, reading the manifests and the help text), not with a live session. Arm E also exposes the plugin's LSP server (`bal start-language-server`), which arms B and D do not have, so E differs from the others by more than the library lookup. Verify arm E on the first real run: the first line of `claude-stream.jsonl` (`system`/`init`) lists the loaded tools, agents and MCP servers; `ballerina-library` should be connected and the `library` agent present. Also count `bal discover` in `result.json` `toolUsage.families` for arms A, B and E: it must be zero.
+
+### Checking the environment
+
+```sh
+make all
+./scripts/check-env.sh
+```
+
+It verifies `bal` (expects 2201.13.6, warns otherwise), `bal discover --help`, Docker (with the `colima start` hint), Go, `claude --version`, Node 18+ and `jq` for arm E, `patch` for arm D, and the skills repository path and commit, then prints a pinned-versions block to paste into the report. It runs only `--version`-style commands and spends no tokens.
+
+### Running the matrix
+
+`token-bench-matrix` enumerates arm x scenario x run cells, shuffles them with `--seed` so arms interleave in time, skips cells that already have a completion marker (`<target>/.token-bench-completed/<arm>/<scenario>/run-NN.done`), and runs each remaining cell with `./token-bench` (`--n-runs=1`, results under `<target>/<arm>/<scenario>/run-NN/`). A cell is complete once its run wrote a `result.json`, whatever the verdict: an agent failure is data and is never rerun automatically. A cell with no result (for example Docker was down) gets no marker and is retried on the next invocation. To redo a cell on purpose, delete its marker and directory. A target directory is tied to its model, language and budget cap (`matrix-plan.json`); change them only with a new `--target`.
+
+Dry-run first. It prints the plan, the run count and a worst-case spend (pending runs x `--max-budget-usd`, the cap that applies to each whole run) and runs nothing, writes nothing:
+
+```sh
+make all
+./token-bench-matrix --phase=phase0 --dry-run --target=./results/phase0
+# equivalent, spelled out:
+./token-bench-matrix --arms A,D --scenarios checkout-sync --runs 3 --model sonnet --dry-run --target=./results/phase0
+```
+
+Phase 0 for real (spends tokens; needs Docker for `checkout-sync`), then the report:
+
+```sh
+./token-bench-matrix --phase=phase0 --target=./results/phase0 --seed 1
+./token-bench-report --output=phase0.html --csv=phase0-runs.csv --summary-csv=phase0-summary.csv ./results/phase0
+```
+
+Presets in `arms/phases.json` (`./token-bench-matrix --list` shows them): `phase0` (A, D; `checkout-sync`; 3 runs; Sonnet), `phase1` (B, C, E on the same scenario), `phase2` (all arms, all existing scenarios, 5 runs; add the connector scenarios once they exist), `phase3` (Opus confirmation). Any explicit flag overrides the preset. Options: `--phase`, `--arms`, `--scenarios`, `--runs`, `--model` (default `sonnet`), `--target`, `--seed` (default 1), `--max-budget-usd` (default 20), `--dry-run`, `--runner`, `--language` (default `ballerina`), `--arms-dir`, `--skills-repo`, `--phoenix-endpoint`, `--list`.
 
 ## Adding new scenarios
 > In most case you can ask your agent to add the scenario by using the `add-test-scenario`. Just validating the generated test should be enough
