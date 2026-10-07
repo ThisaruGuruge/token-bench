@@ -1,0 +1,86 @@
+Implement a checkout that synchronizes a HubSpot contact, captures a PayPal order and records the payment in MySQL.
+
+## `POST /checkout`
+
+Each request is a JSON object:
+
+```json
+{
+  "email": "ada@example.com",
+  "firstName": "Ada",
+  "lastName": "Lovelace",
+  "amount": 19.99,
+  "currency": "USD"
+}
+```
+
+- `email`, `firstName` and `lastName` are non-empty strings; `email` contains an `@`.
+- `amount` is a JSON number or a decimal string (for example `19.99` or `"19.99"`). It must be greater than zero and have at most two fractional digits. Any JSON number notation is valid (for example `1.2e1`).
+- `currency` is exactly three upper-case letters.
+- Other fields may appear and must be ignored.
+
+Reject invalid JSON or a request that violates these rules with HTTP 400. Do not call HubSpot, PayPal or the database for a rejected request.
+
+For a valid request perform these steps in order:
+
+1. **HubSpot contact.** Search contacts for the `email` with the CRM v3 search endpoint (`POST /crm/v3/objects/contacts/search`, an `EQ` filter on the `email` property). If a contact is found, update it with `PATCH /crm/v3/objects/contacts/{id}` setting the `firstname` and `lastname` properties. If none is found, create one with `POST /crm/v3/objects/contacts` with the properties `email`, `firstname` and `lastname`. HubSpot contact ids are strings. Never create a contact for an email that already has one.
+2. **PayPal order.** Create an order with `POST /v2/checkout/orders` using `intent` `CAPTURE` and one purchase unit whose `amount` is `{"currency_code": <currency>, "value": <amount>}`. PayPal money values are strings with two decimal places (for example `"19.99"`, `"12.00"`), and the currency is forwarded unchanged. Then capture it with `POST /v2/checkout/orders/{id}/capture`. Create exactly one order and perform exactly one capture per checkout.
+3. **MySQL record.** Insert one row into the payments table (below) for the PayPal order id.
+
+On success respond with HTTP 201 and:
+
+```json
+{"contactId": "1001", "orderId": "5O190127TN364715T", "status": "COMPLETED"}
+```
+
+`contactId` is the HubSpot contact id and `orderId` is the PayPal order id, both strings. The stored row has `status` `COMPLETED`.
+
+### PayPal failure
+
+If creating the order or capturing it returns a non-2xx status, respond with HTTP 502. The HubSpot contact work from step 1 has already happened and is kept. If the order was created but its capture failed, store a row for that order id with `status` `FAILED` (all other columns filled in as for a successful payment). If the order could not be created there is no order id, so store no row.
+
+## `GET /checkout/{orderId}`
+
+Read the payment from MySQL (not from memory) and respond with HTTP 200:
+
+```json
+{"orderId": "5O190127TN364715T", "contactId": "1001", "email": "ada@example.com", "amount": 19.99, "currency": "USD", "status": "COMPLETED"}
+```
+
+`amount` is a JSON number. Respond with HTTP 404 if no row exists for the order id.
+
+## MySQL
+
+MySQL is already running with these connection details:
+
+- Host: `{{.DatabaseHost}}`
+- Port: `{{.DatabasePort}}`
+- Database: `{{.DatabaseName}}`
+- Username: `{{.DatabaseUser}}`
+- Password: `{{.DatabasePass}}`
+- Table: `{{.DatabaseTable}}`
+
+The table already exists; do not recreate or alter it:
+
+```sql
+CREATE TABLE {{.DatabaseTable}} (
+    order_id VARCHAR(64) PRIMARY KEY,
+    contact_id VARCHAR(64),
+    email VARCHAR(255),
+    amount DECIMAL(12,2),
+    currency VARCHAR(3),
+    status VARCHAR(16)
+);
+```
+
+## HubSpot and PayPal backends
+
+HubSpot and PayPal are running locally as mocks of the real APIs. They need no real credentials: any access token, client id and client secret is accepted.
+
+- HubSpot base URL: `{{.HubSpotURL}}`
+- PayPal base URL: `{{.PayPalURL}}`
+- PayPal OAuth2 token endpoint (client credentials grant): `{{.PayPalURL}}/v1/oauth2/token`
+
+If the target language is Ballerina, use the Ballerina connector packages `ballerinax/hubspot.crm.obj.contacts` (HubSpot), `ballerinax/paypal.orders` (PayPal) and `ballerinax/mysql` (MySQL). The connectors default to the real services' URLs, so set their `serviceUrl` to include the API prefix on the mock base URL: `{{.HubSpotURL}}/crm/v3/objects/contacts` for HubSpot (bearer token authentication) and `{{.PayPalURL}}/v2/checkout` for PayPal (OAuth2 client credentials with `tokenUrl` `{{.PayPalURL}}/v1/oauth2/token`). Use the connector clients' own request and response types. For other languages, call the REST endpoints above directly with an HTTP client and a MySQL driver.
+
+MySQL, HubSpot and PayPal are already running and are owned by the benchmark. Use them directly. Never stop, kill, replace, reconfigure, or otherwise modify any of these backends, and do not start replacement backends. Do not leave the application running when finished because the benchmark starts and stops it for checks.

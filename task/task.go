@@ -2,6 +2,7 @@
 package task
 
 import (
+	"token-bench/task/internal/checkoutsync"
 	"token-bench/task/internal/claimcheck"
 	"token-bench/task/internal/contentbasedrouting"
 	"token-bench/task/internal/contentenricher"
@@ -51,6 +52,23 @@ func NewClaimCheck() Task {
 		RequirementsTemplate: claimcheck.PromptTemplate(),
 		InitFn: func(resources AllocResources) TaskHandle {
 			return claimcheck.New(resources.Ports)
+		},
+	}
+}
+
+// NewCheckoutSync initializes the Checkout Sync task.
+func NewCheckoutSync() Task {
+	return Task{
+		Name:      "checkout-sync",
+		Resources: Resources{NPorts: 4},
+		Endpoints: []Endpoint{
+			{Method: "GET", Path: "/health"},
+			{Method: "POST", Path: "/checkout"},
+			{Method: "GET", Path: "/checkout/{orderId}"},
+		},
+		RequirementsTemplate: checkoutsync.PromptTemplate(),
+		InitFn: func(resources AllocResources) TaskHandle {
+			return checkoutsync.New(resources.Ports)
 		},
 	}
 }

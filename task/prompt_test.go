@@ -13,6 +13,7 @@ func TestTaskDefinitions(t *testing.T) {
 		endpoints  []Endpoint
 	}{
 		{NewClaimCheck(), "claim-check", 5, []Endpoint{{Method: "GET", Path: "/health"}, {Method: "POST", Path: "/messages"}, {Method: "GET", Path: "/health", PortIndex: 1}, {Method: "POST", Path: "/messages", PortIndex: 1}}},
+		{NewCheckoutSync(), "checkout-sync", 4, []Endpoint{{Method: "GET", Path: "/health"}, {Method: "POST", Path: "/checkout"}, {Method: "GET", Path: "/checkout/{orderId}"}}},
 		{NewContentBasedRouter(), "content-based-router", 3, []Endpoint{{Method: "GET", Path: "/health"}, {Method: "POST", Path: "/messages"}}},
 		{NewContentEnricher(), "content-enricher", 3, []Endpoint{{Method: "GET", Path: "/health"}, {Method: "POST", Path: "/messages"}}},
 		{NewDeadLetterChannel(), "dead-letter-channel", 2, []Endpoint{{Method: "GET", Path: "/health"}}},

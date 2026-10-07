@@ -92,6 +92,8 @@ func BenchmarkPromptTemplateFor(name string) (string, error) {
 	switch name {
 	case "claim-check":
 		definition = NewClaimCheck()
+	case "checkout-sync":
+		definition = NewCheckoutSync()
 	case "content-based-router":
 		definition = NewContentBasedRouter()
 	case "content-enricher":

@@ -28,7 +28,7 @@ const hiddenValidationFailure = "hidden validation failed"
 const usage = `usage: token-bench <task> <language> <harness> [--n-runs=N] [--target=DIR] [--skills=DIR] [--phoenix-endpoint=URL]
 
 Implementations:
-  task:      claim-check, content-based-router, content-enricher, dead-letter-channel, multi-consumer, scatter-gather
+  task:      checkout-sync, claim-check, content-based-router, content-enricher, dead-letter-channel, multi-consumer, scatter-gather
   language:  ballerina, go, java, python
   harness:   claude, pi
 
@@ -338,6 +338,8 @@ func selectTask(name string) (task.Task, error) {
 	switch name {
 	case "claim-check":
 		return task.NewClaimCheck(), nil
+	case "checkout-sync":
+		return task.NewCheckoutSync(), nil
 	case "content-based-router":
 		return task.NewContentBasedRouter(), nil
 	case "content-enricher":
