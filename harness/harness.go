@@ -15,6 +15,17 @@ type (
 		// Model overrides the harness model; empty selects the harness default.
 		// Only the Claude harness supports it.
 		Model string
+		// PluginDir is a complete Claude Code plugin directory loaded with
+		// --plugin-dir; Claude harness only.
+		PluginDir string
+		// ExtraSystemPrompt is appended to the harness' own system prompt;
+		// Claude harness only.
+		ExtraSystemPrompt string
+		// Env holds KEY=value entries added to the agent process' environment;
+		// Claude harness only.
+		Env []string
+		// MaxBudgetUSD caps one Claude session's spend; zero selects the default.
+		MaxBudgetUSD float64
 		// Status receives best-effort formatted activity updates. The caller owns
 		// the capacity-one channel and must not close it while a harness is running.
 		Status chan string
@@ -43,8 +54,14 @@ func NewPi(config Config) Harness {
 
 // NewClaude initializes the Claude Code harness.
 func NewClaude(config Config) Harness {
-	return claude.New(claude.Config{SkillsDir: config.SkillsDir, Status: config.Status, Model: config.Model})
+	return claude.New(claude.Config{
+		SkillsDir: config.SkillsDir, Status: config.Status, Model: config.Model, PluginDir: config.PluginDir,
+		ExtraSystemPrompt: config.ExtraSystemPrompt, Env: config.Env, MaxBudgetUSD: config.MaxBudgetUSD,
+	})
 }
+
+// DefaultMaxBudgetUSD is the per-run spend cap passed to Claude Code unless overridden.
+const DefaultMaxBudgetUSD = claude.DefaultMaxBudgetUSD
 
 // ClaudeStreamArtifact is the name of the Claude stream log written to the working directory.
 const ClaudeStreamArtifact = claude.StreamArtifactName

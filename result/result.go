@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	SchemaVersion         = 4
+	SchemaVersion         = 5
+	schemaVersion4        = 4
 	previousSchemaVersion = 3
 	legacySchemaVersion   = 2
 	unknownModel          = "unknown-model"
@@ -26,6 +27,28 @@ type TokenCount struct {
 	Total      int `json:"total"`
 	CacheRead  int `json:"cacheRead"`
 	CacheWrite int `json:"cacheWrite"`
+}
+
+// Environment records the toolchain and arm setup a run was executed with, so
+// results stay interpretable after the machine changes.
+type Environment struct {
+	BalVersion string `json:"balVersion,omitempty"`
+	// BalDiscover is the discover row of `bal tool list` ("not installed" when absent),
+	// whether or not the arm could see it.
+	BalDiscover   string `json:"balDiscover,omitempty"`
+	ClaudeVersion string `json:"claudeVersion,omitempty"`
+	// DiscoverVisible is whether `bal discover` was reachable by the agent.
+	DiscoverVisible bool `json:"discoverVisible"`
+	// ColdDiscoverCache is true when the run had a private, empty XDG cache.
+	ColdDiscoverCache bool `json:"coldDiscoverCache"`
+	// SkillsRepoCommit is the skills repository commit found; SkillsHash hashes
+	// the exact skills or plugin tree (after any patch) the agent received.
+	SkillsRepoCommit string `json:"skillsRepoCommit,omitempty"`
+	SkillsHash       string `json:"skillsHash,omitempty"`
+	// ExtraSystemPrompt is the arm text appended to the base system prompt.
+	ExtraSystemPrompt string `json:"extraSystemPrompt,omitempty"`
+	// MaxBudgetUSD is the per-run cap handed to the harness.
+	MaxBudgetUSD float64 `json:"maxBudgetUsd,omitempty"`
 }
 
 // Result is the persisted outcome and normalized CLI configuration for one run.
@@ -54,7 +77,9 @@ type Result struct {
 	ReportedCostUSD *float64 `json:"reportedCostUsd,omitempty"`
 	// ToolUsage summarizes tool calls parsed from the harness stream log.
 	ToolUsage *streamlog.Summary `json:"toolUsage,omitempty"`
-	Error     string             `json:"error,omitempty"`
+	// Environment records the toolchain and arm setup; absent in older results.
+	Environment *Environment `json:"environment,omitempty"`
+	Error       string       `json:"error,omitempty"`
 }
 
 // Write persists one result as indented JSON.
@@ -96,7 +121,7 @@ func Read(path string) (Result, error) {
 // Validate checks the persisted schema and required metadata.
 func (r Result) Validate() error {
 	switch r.SchemaVersion {
-	case legacySchemaVersion, previousSchemaVersion, SchemaVersion:
+	case legacySchemaVersion, previousSchemaVersion, schemaVersion4, SchemaVersion:
 	default:
 		return fmt.Errorf("unsupported result schema version %d", r.SchemaVersion)
 	}

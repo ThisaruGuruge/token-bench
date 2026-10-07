@@ -125,3 +125,30 @@ func TestValidateRejectsNegativeDuration(t *testing.T) {
 		t.Fatal("expected duration validation error")
 	}
 }
+
+func TestWriteReadEnvironmentAndSchema4Compatibility(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "result.json")
+	want := Result{
+		SchemaVersion: SchemaVersion, Task: "router", Language: "go", Harness: "claude", Arm: "E",
+		Model: "sonnet", ThinkingBudget: "high", Run: 2, RequestedRuns: 3,
+		Environment: &Environment{
+			BalVersion: "Ballerina 2201.13.6 (Swan Lake Update 13)", BalDiscover: "0.1.0 [repo = local]",
+			ClaudeVersion: "2.1.291 (Claude Code)", DiscoverVisible: false, ColdDiscoverCache: true,
+			SkillsRepoCommit: "a87ce03", SkillsHash: "0123456789abcdef", MaxBudgetUSD: 20,
+		},
+	}
+	if err := Write(path, want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+	older := Result{SchemaVersion: 4, Task: "router", Language: "go", Harness: "claude", Model: "opus", ThinkingBudget: "high", Run: 1, RequestedRuns: 1}
+	if err := Write(path, older); err != nil {
+		t.Fatalf("schema 4 results must stay readable: %v", err)
+	}
+}

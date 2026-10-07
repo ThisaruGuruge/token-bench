@@ -202,3 +202,77 @@ func TestCreateSkillsPluginSupportsSingleSkillDirectory(t *testing.T) {
 		t.Fatalf("expected one staged skill, got %d", len(entries))
 	}
 }
+
+func TestArmOptionsReachTheClaudeArguments(t *testing.T) {
+	agent := New(Config{Model: "sonnet", PluginDir: "/skills repo", ExtraSystemPrompt: "\nhint line\n", MaxBudgetUSD: 7.5})
+	agent.pluginPath = "/tmp/skills-plugin"
+	arguments := agent.startArguments()
+	index := func(flag string) int {
+		for i, argument := range arguments {
+			if argument == flag {
+				return i
+			}
+		}
+		t.Fatalf("%s missing from %#v", flag, arguments)
+		return -1
+	}
+	if got := arguments[index("--max-budget-usd")+1]; got != "7.5" {
+		t.Errorf("budget = %q", got)
+	}
+	wantPrompt := "Do not ask clarifying questions. Make reasonable assumptions and state them in your final output.\n\nhint line"
+	if got := arguments[index("--append-system-prompt")+1]; got != wantPrompt {
+		t.Errorf("system prompt = %q", got)
+	}
+	var plugins []string
+	for i, argument := range arguments {
+		if argument == "--plugin-dir" {
+			plugins = append(plugins, arguments[i+1])
+		}
+	}
+	if !reflect.DeepEqual(plugins, []string{"/tmp/skills-plugin", "/skills repo"}) {
+		t.Errorf("plugin dirs = %#v", plugins)
+	}
+	if got := New(Config{}).config.MaxBudgetUSD; got != 20 {
+		t.Errorf("default budget = %v", got)
+	}
+}
+
+func TestExternalPluginDirIsNeverRemoved(t *testing.T) {
+	plugin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(plugin, "keep"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	agent := New(Config{PluginDir: plugin})
+	if err := agent.End(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(plugin, "keep")); err != nil {
+		t.Fatalf("external plugin directory was modified: %v", err)
+	}
+}
+
+func TestEnvAndArgumentsAreAppliedToTheProcess(t *testing.T) {
+	binDir := t.TempDir()
+	record := filepath.Join(t.TempDir(), "record")
+	script := "#!/bin/sh\nprintf 'cache=%s\\nmarker=%s\\nargs=%s\\n' \"$XDG_CACHE_HOME\" \"$ARM_MARKER\" \"$*\" > '" + record + "'\ncat >/dev/null\n"
+	if err := os.WriteFile(filepath.Join(binDir, "claude"), []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("XDG_CACHE_HOME", "/from/parent")
+
+	agent := New(Config{Env: []string{"XDG_CACHE_HOME=/per/run", "ARM_MARKER=on"}, PluginDir: "/plugin"})
+	if err := agent.Start(t.TempDir(), nil); err != nil {
+		t.Fatal(err)
+	}
+	_ = agent.End()
+	content, err := os.ReadFile(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"cache=/per/run", "marker=on", "--plugin-dir /plugin"} {
+		if !strings.Contains(string(content), want) {
+			t.Errorf("process did not see %q:\n%s", want, content)
+		}
+	}
+}

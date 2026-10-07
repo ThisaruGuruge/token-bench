@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,10 +23,12 @@ import (
 var appendSystemPrompt string
 
 const (
-	defaultModel       = "opus"
-	effort             = "high"
-	streamArtifactName = "claude-stream.jsonl"
-	stderrArtifactName = "claude-stderr.log"
+	defaultModel = "opus"
+	// DefaultMaxBudgetUSD is the per-session spend cap when Config sets none.
+	DefaultMaxBudgetUSD = 20.0
+	effort              = "high"
+	streamArtifactName  = "claude-stream.jsonl"
+	stderrArtifactName  = "claude-stderr.log"
 )
 
 // StreamArtifactName is the file, in the working directory, that receives the raw stream log.
@@ -37,6 +40,15 @@ type Config struct {
 	Status    chan string
 	// Model is the Claude Code model alias or id. Empty selects the default.
 	Model string
+	// PluginDir is a complete plugin directory passed as an extra --plugin-dir.
+	// It is never modified or removed.
+	PluginDir string
+	// ExtraSystemPrompt is appended to the built-in appended system prompt.
+	ExtraSystemPrompt string
+	// Env entries (KEY=value) are added to the process environment, overriding duplicates.
+	Env []string
+	// MaxBudgetUSD is passed as --max-budget-usd; zero selects DefaultMaxBudgetUSD.
+	MaxBudgetUSD float64
 }
 
 // TokenCount contains usage dimensions reported by Claude Code.
@@ -123,6 +135,9 @@ func New(config Config) *claude {
 	if config.Model == "" {
 		config.Model = defaultModel
 	}
+	if config.MaxBudgetUSD == 0 {
+		config.MaxBudgetUSD = DefaultMaxBudgetUSD
+	}
 	return &claude{config: config}
 }
 
@@ -181,7 +196,7 @@ func (c *claude) startProcess(executable, workingDir string, benchmark tracing.B
 
 	command := exec.Command(executable, c.startArguments()...)
 	command.Dir = workingDir
-	command.Env = append(os.Environ(), "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1")
+	command.Env = append(append(os.Environ(), "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1"), c.config.Env...)
 	command.Stderr = stderrFile
 	stdin, err := command.StdinPipe()
 	if err != nil {
@@ -352,8 +367,8 @@ func (c *claude) startArguments() []string {
 		"--effort", effort,
 		"--dangerously-skip-permissions",
 		"--disallowedTools", "AskUserQuestion",
-		"--append-system-prompt", strings.TrimSpace(appendSystemPrompt),
-		"--max-budget-usd", "20",
+		"--append-system-prompt", c.systemPrompt(),
+		"--max-budget-usd", strconv.FormatFloat(c.config.MaxBudgetUSD, 'f', -1, 64),
 		"--setting-sources", "",
 		"-p",
 		"--input-format", "stream-json",
@@ -363,7 +378,18 @@ func (c *claude) startArguments() []string {
 	if c.pluginPath != "" {
 		arguments = append(arguments, "--plugin-dir", c.pluginPath)
 	}
+	if c.config.PluginDir != "" {
+		arguments = append(arguments, "--plugin-dir", c.config.PluginDir)
+	}
 	return arguments
+}
+
+func (c *claude) systemPrompt() string {
+	prompt := strings.TrimSpace(appendSystemPrompt)
+	if extra := strings.TrimSpace(c.config.ExtraSystemPrompt); extra != "" {
+		prompt += "\n\n" + extra
+	}
+	return prompt
 }
 
 func (c *claude) SendMessage(message string) (string, error) {
