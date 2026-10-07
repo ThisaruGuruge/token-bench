@@ -1,6 +1,7 @@
 package claude
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -129,6 +130,29 @@ func TestResultUsageFallsBackWhenModelUsageIsUnavailable(t *testing.T) {
 	agent.addUsage(resultEvent{Usage: resultUsage{Input: 2, Output: 3, CacheRead: 5, CacheWrite: 7}})
 	if agent.tokens != (TokenCount{Input: 2, Output: 3, CacheRead: 5, CacheWrite: 7, Total: 17}) {
 		t.Fatalf("unexpected fallback usage: %+v", agent.tokens)
+	}
+}
+
+func TestReportedCostIsSummedAcrossResults(t *testing.T) {
+	agent := New(Config{})
+	if _, ok := agent.ReportedCostUSD(); ok {
+		t.Fatal("no cost expected before any result")
+	}
+	agent.addUsage(resultEvent{})
+	if _, ok := agent.ReportedCostUSD(); ok {
+		t.Fatal("a result without total_cost_usd must not report a cost")
+	}
+	var first, second resultEvent
+	if err := json.Unmarshal([]byte(`{"type":"result","total_cost_usd":0.25}`), &first); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(`{"type":"result","total_cost_usd":0.5}`), &second); err != nil {
+		t.Fatal(err)
+	}
+	agent.addUsage(first)
+	agent.addUsage(second)
+	if cost, ok := agent.ReportedCostUSD(); !ok || cost != 0.75 {
+		t.Fatalf("cost = %v, %v; want 0.75, true", cost, ok)
 	}
 }
 

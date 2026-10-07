@@ -28,6 +28,9 @@ type (
 		// Send a message to the given harness. Message could be either the starting prompt or feedback
 		SendMessage(message string) (string, error)
 		TokenCount() (TokenCount, error)
+		// ReportedCostUSD is the cost the harness itself reported for the run,
+		// and false when it reports none.
+		ReportedCostUSD() (float64, bool)
 		End() error
 	}
 	TokenCount = shared.TokenCount
@@ -42,3 +45,6 @@ func NewPi(config Config) Harness {
 func NewClaude(config Config) Harness {
 	return claude.New(claude.Config{SkillsDir: config.SkillsDir, Status: config.Status, Model: config.Model})
 }
+
+// ClaudeStreamArtifact is the name of the Claude stream log written to the working directory.
+const ClaudeStreamArtifact = claude.StreamArtifactName

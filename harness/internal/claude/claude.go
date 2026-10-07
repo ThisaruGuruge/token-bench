@@ -28,6 +28,9 @@ const (
 	stderrArtifactName = "claude-stderr.log"
 )
 
+// StreamArtifactName is the file, in the working directory, that receives the raw stream log.
+const StreamArtifactName = streamArtifactName
+
 // Config contains Claude Code startup configuration.
 type Config struct {
 	SkillsDir string
@@ -46,6 +49,8 @@ type claude struct {
 	pluginPath string
 	tokens     TokenCount
 	lastReply  string
+	costUSD    float64
+	costSeen   bool
 }
 
 type runningProcess struct {
@@ -85,14 +90,16 @@ func (s *asyncStatus) result() error {
 }
 
 type resultEvent struct {
-	Type       string                `json:"type"`
-	Subtype    string                `json:"subtype"`
-	Result     string                `json:"result"`
-	IsError    bool                  `json:"is_error"`
-	Errors     []string              `json:"errors"`
-	Usage      resultUsage           `json:"usage"`
-	ModelUsage map[string]modelUsage `json:"modelUsage"`
-	Origin     struct {
+	Type    string   `json:"type"`
+	Subtype string   `json:"subtype"`
+	Result  string   `json:"result"`
+	IsError bool     `json:"is_error"`
+	Errors  []string `json:"errors"`
+	// TotalCostUSD is Claude Code's own cost for the turn; nil when absent.
+	TotalCostUSD *float64              `json:"total_cost_usd"`
+	Usage        resultUsage           `json:"usage"`
+	ModelUsage   map[string]modelUsage `json:"modelUsage"`
+	Origin       struct {
 		Kind string `json:"kind"`
 	} `json:"origin"`
 }
@@ -155,6 +162,7 @@ func (c *claude) Start(workingDir string, benchmark tracing.BenchmarkSpan) error
 	}
 	c.process = running
 	c.tokens = TokenCount{}
+	c.costUSD, c.costSeen = 0, false
 	c.lastReply = ""
 	return nil
 }
@@ -398,6 +406,13 @@ func (c *claude) SendMessage(message string) (string, error) {
 }
 
 func (c *claude) addUsage(result resultEvent) {
+	if result.TotalCostUSD != nil {
+		// Summed per result, like the token counts above. Whether Claude Code
+		// reports per-turn or cumulative cost in a multi-turn stream is
+		// unverified; the stream analyzer keeps each result's value.
+		c.costUSD += *result.TotalCostUSD
+		c.costSeen = true
+	}
 	if len(result.ModelUsage) == 0 {
 		c.tokens.Input += result.Usage.Input
 		c.tokens.Output += result.Usage.Output
@@ -421,6 +436,12 @@ func (c *claude) TokenCount() (TokenCount, error) {
 		return TokenCount{}, errors.New("Claude is not started")
 	}
 	return c.tokens, nil
+}
+
+func (c *claude) ReportedCostUSD() (float64, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.costUSD, c.costSeen
 }
 
 func (c *claude) End() error {

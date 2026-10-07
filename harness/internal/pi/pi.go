@@ -92,6 +92,11 @@ func (p *pi) Model() string {
 	return model
 }
 
+// ReportedCostUSD reports false: Pi does not report a cost.
+func (p *pi) ReportedCostUSD() (float64, bool) {
+	return 0, false
+}
+
 func (p *pi) ThinkingBudget() string {
 	return thinking
 }
