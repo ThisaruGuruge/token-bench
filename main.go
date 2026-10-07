@@ -26,6 +26,8 @@ import (
 const hiddenValidationFailure = "hidden validation failed"
 
 const usage = `usage: token-bench <task> <language> <harness> [--n-runs=N] [--target=DIR] [--skills=DIR] [--phoenix-endpoint=URL]
+                   [--model=NAME] [--arm=LABEL] [--max-budget-usd=N] [--arms-dir=DIR] [--skills-repo=DIR]
+                   [--run-number=N] [--requested-runs=N]
 
 Implementations:
   task:      checkout-sync, claim-check, content-based-router, content-enricher, dead-letter-channel, multi-consumer, scatter-gather
@@ -35,7 +37,13 @@ Implementations:
 Notes:
   claude loads --skills as a temporary plugin; global Claude configuration may still be discovered.
   --model selects the Claude model alias or id (default opus); claude harness only.
-  --arm is a free-text label recorded in result.json and used by token-bench-report for grouping.
+  --arm=A..E selects an arm definition from --arms-dir (default ./arms, or $TOKEN_BENCH_ARMS_DIR) and applies its
+    skills or plugin, appended system prompt, environment and bal discover visibility (claude harness only). A label
+    with no definition is an ad-hoc label: recorded and used for report grouping, with no behavior attached.
+  --skills-repo is the ballerina-platform/skills checkout arms read from ($TOKEN_BENCH_SKILLS_REPO, default
+    ~/Projects/Ballerina/cli-improvements/benchmark/reference/ballerina-skills).
+  --max-budget-usd caps one Claude session's spend (default 20) and is recorded in result.json.
+  --run-number and --requested-runs label the first run's number and the cell's run count (used by the matrix runner).
   --phoenix-endpoint enables tracing to a locally hosted Arize Phoenix OTLP/HTTP endpoint.
 `
 
@@ -49,6 +57,11 @@ type options struct {
 	model           string
 	arm             string
 	phoenixEndpoint string
+	maxBudgetUSD    float64
+	armsDir         string
+	skillsRepo      string
+	runNumber       int
+	requestedRuns   int
 }
 
 type runResult = benchresult.Result
@@ -113,8 +126,8 @@ func run(arguments []string) (exitCode int) {
 		return 2
 	}
 	statusUpdates := make(chan string, 1)
-	harnessConstructor, err := selectHarness(configuration.harness, harness.Config{SkillsDir: configuration.skillsDir, Status: statusUpdates, Model: configuration.model})
-	if err != nil {
+	harnessConfig := harness.Config{SkillsDir: configuration.skillsDir, Status: statusUpdates, Model: configuration.model, MaxBudgetUSD: configuration.maxBudgetUSD}
+	if _, err := selectHarness(configuration.harness, harnessConfig); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
@@ -131,6 +144,20 @@ func run(arguments []string) (exitCode int) {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	setup, err := newArmSetup(configuration, target)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	if setup.arm != nil {
+		harnessConfig.SkillsDir = setup.arm.SkillsDir
+		harnessConfig.PluginDir = setup.arm.PluginDir
+		harnessConfig.ExtraSystemPrompt = setup.arm.ExtraSystemPrompt
+		configuration.skillsDir = setup.displaySkills()
+		for _, warning := range setup.arm.Warnings {
+			fmt.Fprintln(os.Stderr, "warning:", warning)
+		}
+	}
 	display := startStatusDisplay(statusUpdates, os.Stderr)
 	result := report{Task: taskDefinition.Name, Language: configuration.language, Harness: configuration.harness, SkillsDir: configuration.skillsDir}
 	for run := 1; run <= configuration.runs; run++ {
@@ -140,6 +167,21 @@ func run(arguments []string) (exitCode int) {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
+		runEnv, err := setup.prepareRun()
+		if err != nil {
+			_ = display.Close()
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		runHarnessConfig := harnessConfig
+		runHarnessConfig.Env = runEnv.envEntries()
+		harnessConstructor, err := selectHarness(configuration.harness, runHarnessConfig)
+		if err != nil {
+			_ = runEnv.cleanup()
+			_ = display.Close()
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
 		current := runResult{
 			SchemaVersion:  benchresult.SchemaVersion,
 			Task:           taskDefinition.Name,
@@ -148,10 +190,14 @@ func run(arguments []string) (exitCode int) {
 			Arm:            configuration.arm,
 			SkillsDir:      configuration.skillsDir,
 			PromptTemplate: promptTemplate,
-			Run:            run,
-			RequestedRuns:  configuration.runs,
+			Run:            configuration.runNumber + run - 1,
+			RequestedRuns:  configuration.requestedRuns,
+			Environment:    setup.environment(configuration, harnessConfig),
 		}
 		current = executeRun(current, directory, taskDefinition, languageImplementation, harnessConstructor, traceProvider)
+		if err := runEnv.cleanup(); err != nil {
+			current.Error = joinErrors(current.Error, err.Error())
+		}
 		result.Runs = append(result.Runs, current)
 		if err := benchresult.Write(filepath.Join(directory, "result.json"), current); err != nil {
 			_ = display.Close()
@@ -474,6 +520,44 @@ func parseOptions(arguments []string) (options, error) {
 				return options{}, errors.New("--phoenix-endpoint requires a value")
 			}
 			parsed.phoenixEndpoint = arguments[index]
+		case isFlag(argument, "--max-budget-usd"):
+			value, err := flagValue(arguments, &index, "--max-budget-usd")
+			if err != nil {
+				return options{}, err
+			}
+			budget, err := strconv.ParseFloat(value, 64)
+			if err != nil || budget <= 0 {
+				return options{}, errors.New("--max-budget-usd must be a positive number")
+			}
+			parsed.maxBudgetUSD = budget
+		case isFlag(argument, "--arms-dir"):
+			value, err := flagValue(arguments, &index, "--arms-dir")
+			if err != nil {
+				return options{}, err
+			}
+			parsed.armsDir = value
+		case isFlag(argument, "--skills-repo"):
+			value, err := flagValue(arguments, &index, "--skills-repo")
+			if err != nil {
+				return options{}, err
+			}
+			parsed.skillsRepo = value
+		case isFlag(argument, "--run-number"):
+			value, err := flagValue(arguments, &index, "--run-number")
+			if err != nil {
+				return options{}, err
+			}
+			if parsed.runNumber, err = strconv.Atoi(value); err != nil || parsed.runNumber < 1 {
+				return options{}, errors.New("--run-number must be a positive integer")
+			}
+		case isFlag(argument, "--requested-runs"):
+			value, err := flagValue(arguments, &index, "--requested-runs")
+			if err != nil {
+				return options{}, err
+			}
+			if parsed.requestedRuns, err = strconv.Atoi(value); err != nil || parsed.requestedRuns < 1 {
+				return options{}, errors.New("--requested-runs must be a positive integer")
+			}
 		case strings.HasPrefix(argument, "--target="):
 			parsed.target = strings.TrimPrefix(argument, "--target=")
 		case argument == "--target":
@@ -495,7 +579,40 @@ func parseOptions(arguments []string) (options, error) {
 	if parsed.model != "" && parsed.harness != "claude" {
 		return options{}, errors.New("--model is only supported by the claude harness")
 	}
+	if parsed.maxBudgetUSD != 0 && parsed.harness != "claude" {
+		return options{}, errors.New("--max-budget-usd is only supported by the claude harness")
+	}
+	if parsed.runNumber == 0 {
+		parsed.runNumber = 1
+	}
+	if parsed.requestedRuns == 0 {
+		parsed.requestedRuns = parsed.runs
+	}
+	if parsed.runNumber+parsed.runs-1 > parsed.requestedRuns {
+		return options{}, errors.New("--run-number plus --n-runs exceeds --requested-runs")
+	}
 	return parsed, nil
+}
+
+func isFlag(argument, name string) bool {
+	return argument == name || strings.HasPrefix(argument, name+"=")
+}
+
+// flagValue returns the value of a --name=value or --name value argument,
+// advancing index past a separate value.
+func flagValue(arguments []string, index *int, name string) (string, error) {
+	argument := arguments[*index]
+	if value, found := strings.CutPrefix(argument, name+"="); found {
+		if value == "" {
+			return "", fmt.Errorf("%s requires a value", name)
+		}
+		return value, nil
+	}
+	*index++
+	if *index == len(arguments) || arguments[*index] == "" {
+		return "", fmt.Errorf("%s requires a value", name)
+	}
+	return arguments[*index], nil
 }
 
 func allocatePorts(count int) ([]int, error) {
