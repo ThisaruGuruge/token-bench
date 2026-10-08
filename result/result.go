@@ -20,6 +20,16 @@ const (
 	unknownThinking       = "unknown-thinking"
 )
 
+// Cost estimate bases recorded in Result.CostEstimateBasis.
+const (
+	// CostBasisStreamUsage prices the per-model usage parsed from the stream
+	// log, with cache writes split by TTL.
+	CostBasisStreamUsage = "stream-usage"
+	// CostBasisTokenTotals prices Tokens at the run's model, assuming 5-minute
+	// cache writes; it understates cost when Claude Code wrote 1-hour caches.
+	CostBasisTokenTotals = "token-totals"
+)
+
 // TokenCount contains the token usage dimensions recorded for a run.
 type TokenCount struct {
 	Input      int `json:"input"`
@@ -70,8 +80,10 @@ type Result struct {
 	// DurationSeconds is the wall-clock time from agent start to the end of the
 	// final validation, including every feedback round. Absent in older results.
 	DurationSeconds float64 `json:"durationSeconds,omitempty"`
-	// CostUSD is estimated from Tokens with the repository price table.
-	CostUSD *float64 `json:"costUsd,omitempty"`
+	// CostUSD is estimated with the repository price table, on the basis named
+	// by CostEstimateBasis.
+	CostUSD           *float64 `json:"costUsd,omitempty"`
+	CostEstimateBasis string   `json:"costEstimateBasis,omitempty"`
 	// ReportedCostUSD is the cost reported by the harness itself (Claude Code's
 	// total_cost_usd), when available.
 	ReportedCostUSD *float64 `json:"reportedCostUsd,omitempty"`
@@ -80,6 +92,14 @@ type Result struct {
 	// Environment records the toolchain and arm setup; absent in older results.
 	Environment *Environment `json:"environment,omitempty"`
 	Error       string       `json:"error,omitempty"`
+	// InfraFailure marks a run that failed in the benchmark machinery (ports,
+	// Docker backends, the task's checks, the harness process or the model
+	// API) rather than in the agent's work. Such a run is invalid: it is left
+	// out of pass rates and rerun.
+	InfraFailure bool `json:"infraFailure,omitempty"`
+	// StopReason is the limit the harness stopped the agent on, such as
+	// "error_max_budget_usd"; an agent outcome, not an infrastructure failure.
+	StopReason string `json:"stopReason,omitempty"`
 }
 
 // Write persists one result as indented JSON.

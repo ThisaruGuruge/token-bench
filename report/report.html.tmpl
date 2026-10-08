@@ -52,12 +52,12 @@
 
   <section class="task">
     <h2>Arm &times; scenario summary</h2>
-    <div class="muted">Pass is passed/total runs. Medians cover all runs, failed ones included, since a failed run still spent its tokens, cost and time; cost and time medians skip runs that recorded none.</div>
+    <div class="muted">Pass is passed/valid runs, with a 95% Wilson interval; infrastructure failures (Docker, task checks, Claude process or API) are not agent runs and are only counted. Medians cover all valid runs, failed ones included, since a failed run still spent its tokens, cost and time; cost and time medians skip runs that recorded none. Cost is Claude Code's own total_cost_usd when recorded, else the price-table estimate.</div>
     <table>
-      <thead><tr><th>Scenario</th><th>Arm</th><th>Language</th><th>Model</th><th>Pass</th><th>Pass rate</th><th>Median tokens</th><th>Median cost (USD)</th><th>Median duration (s)</th><th>Median fixes</th></tr></thead>
+      <thead><tr><th>Scenario</th><th>Arm</th><th>Language</th><th>Model</th><th>Pass</th><th>Pass rate</th><th>95% CI</th><th>Infra failures</th><th>Median tokens</th><th>Median cost (USD)</th><th>Median duration (s)</th><th>Median fixes</th></tr></thead>
       <tbody>
         {{range .Summary}}<tr>
-          <td>{{.Scenario}}</td><td>{{.ArmLabel}}</td><td>{{.Language}}</td><td>{{.Model}}</td><td>{{.PassFraction}}</td><td>{{printf "%.1f" .PassRate}}%</td>
+          <td>{{.Scenario}}</td><td>{{.ArmLabel}}</td><td>{{.Language}}</td><td>{{.Model}}</td><td>{{.PassFraction}}</td><td>{{printf "%.1f" .PassRate}}%</td><td>{{.PassIntervalLabel}}</td><td>{{.InfraFailures}}</td>
           <td>{{printf "%.0f" .MedianTokens}}</td><td>{{if .HasCost}}{{printf "%.4f" .MedianCostUSD}}{{else}}-{{end}}</td><td>{{if .HasDuration}}{{printf "%.1f" .MedianDurationSeconds}}{{else}}-{{end}}</td><td>{{printf "%.1f" .MedianCorrections}}</td>
         </tr>{{end}}
       </tbody>

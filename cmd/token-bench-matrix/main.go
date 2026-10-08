@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"token-bench/arm"
@@ -103,7 +104,8 @@ func run(arguments []string, stdout, stderr io.Writer) int {
 		return command.Run()
 	}
 	outcome := plan.Execute(stdout, ordered, extra, executor)
-	fmt.Fprintf(stdout, "\nRan %d, skipped %d already complete, %d without a result\n", outcome.Ran, outcome.Skipped, len(outcome.Failed))
+	fmt.Fprintf(stdout, "\nRan %d, skipped %d already complete, %d without a usable result (%d infrastructure failures, logged in %s)\n",
+		outcome.Ran, outcome.Skipped, len(outcome.Failed), len(outcome.Infra), filepath.Join(plan.Target, matrix.InfraLogName))
 	for _, cell := range outcome.Failed {
 		fmt.Fprintf(stdout, "  retry on next invocation: %s\n", cell)
 	}

@@ -2,6 +2,8 @@
 package harness
 
 import (
+	"errors"
+
 	"token-bench/harness/internal/claude"
 	"token-bench/harness/internal/pi"
 	"token-bench/harness/internal/shared"
@@ -45,6 +47,10 @@ type (
 		End() error
 	}
 	TokenCount = shared.TokenCount
+	// InfraError marks a harness or model API failure; see IsInfrastructure.
+	InfraError = shared.InfraError
+	// StopError marks a session stopped on a spend or turn cap; see StopReason.
+	StopError = shared.StopError
 )
 
 // NewPi initializes the Pi coding harness.
@@ -58,6 +64,22 @@ func NewClaude(config Config) Harness {
 		SkillsDir: config.SkillsDir, Status: config.Status, Model: config.Model, PluginDir: config.PluginDir,
 		ExtraSystemPrompt: config.ExtraSystemPrompt, Env: config.Env, MaxBudgetUSD: config.MaxBudgetUSD,
 	})
+}
+
+// IsInfrastructure reports whether err is a harness or model API failure
+// rather than an agent outcome.
+func IsInfrastructure(err error) bool {
+	var infra *shared.InfraError
+	return errors.As(err, &infra)
+}
+
+// StopReason returns the limit a harness stopped the agent on, if any.
+func StopReason(err error) (string, bool) {
+	var stop *shared.StopError
+	if errors.As(err, &stop) {
+		return stop.Reason, true
+	}
+	return "", false
 }
 
 // DefaultMaxBudgetUSD is the per-run spend cap passed to Claude Code unless overridden.

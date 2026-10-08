@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"token-bench/result"
 )
 
 // KnownScenarios lists the scenarios the runner accepts.
@@ -244,11 +246,20 @@ func (p Plan) CheckOrWritePlan() error {
 	return nil
 }
 
-// Outcome of executing a matrix.
+// Outcome of executing a matrix. Failed cells produced no usable result;
+// Infra lists the cells among them whose run was an infrastructure failure.
 type Outcome struct {
 	Ran, Skipped int
 	Failed       []Cell
+	Infra        []Cell
 }
+
+// InfraFailuresDir holds the run directories of infrastructure failures, moved
+// out of the result tree; dot-directories are skipped by the report.
+const InfraFailuresDir = ".infra-failures"
+
+// InfraLogName is the JSON-lines log of infrastructure failures in the target.
+const InfraLogName = "infra-failures.log"
 
 // Executor runs one cell, returning an error when the run could not even be
 // started or exited abnormally.
@@ -256,8 +267,10 @@ type Executor func(cell Cell, args []string) error
 
 // Execute runs the pending cells in order. A cell completes when its run wrote
 // a result.json, whatever the verdict: an agent failure is a data point and is
-// never rerun automatically. A cell without a result is reported and left
-// without a marker so the next invocation retries it.
+// never rerun automatically. A cell without a result, or whose result is an
+// infrastructure failure (result.InfraFailure), is left without a marker so
+// the next invocation retries it; an infrastructure failure's directory is
+// moved under InfraFailuresDir and logged in InfraLogName.
 func (p Plan) Execute(out io.Writer, ordered []Cell, extra RunnerArgs, run Executor) Outcome {
 	var outcome Outcome
 	pending := p.Pending(ordered)
@@ -275,6 +288,17 @@ func (p Plan) Execute(out io.Writer, ordered []Cell, extra RunnerArgs, run Execu
 			outcome.Failed = append(outcome.Failed, cell)
 			continue
 		}
+		if cause, infra := infraFailure(p.CellDir(cell)); infra {
+			moved, err := p.setAsideInfraFailure(cell, cause)
+			if err != nil {
+				fmt.Fprintf(out, "  infrastructure failure (%s); cannot set it aside: %v\n", cause, err)
+			} else {
+				fmt.Fprintf(out, "  infrastructure failure (%s); moved to %s, will retry on the next invocation\n", cause, moved)
+			}
+			outcome.Failed = append(outcome.Failed, cell)
+			outcome.Infra = append(outcome.Infra, cell)
+			continue
+		}
 		if err := writeMarker(p.MarkerPath(cell)); err != nil {
 			fmt.Fprintf(out, "  cannot write the completion marker: %v\n", err)
 			outcome.Failed = append(outcome.Failed, cell)
@@ -286,6 +310,60 @@ func (p Plan) Execute(out io.Writer, ordered []Cell, extra RunnerArgs, run Execu
 		outcome.Ran++
 	}
 	return outcome
+}
+
+// infraFailure reports whether any result under dir is an infrastructure
+// failure, with its error. An unreadable result counts as one.
+func infraFailure(dir string) (string, bool) {
+	cause, found := "", false
+	_ = filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || entry.Name() != "result.json" {
+			return nil
+		}
+		value, readErr := result.Read(path)
+		switch {
+		case readErr != nil:
+			cause, found = "unreadable result: "+readErr.Error(), true
+		case value.InfraFailure:
+			cause, found = value.Error, true
+		default:
+			return nil
+		}
+		return filepath.SkipAll
+	})
+	return cause, found
+}
+
+// setAsideInfraFailure moves the cell directory under InfraFailuresDir, so the
+// retry starts clean and the failed run stays out of reports, and appends a
+// line to InfraLogName. It returns the new directory.
+func (p Plan) setAsideInfraFailure(cell Cell, cause string) (string, error) {
+	now := time.Now().UTC()
+	destination := filepath.Join(p.Target, InfraFailuresDir, cell.Arm, cell.Scenario,
+		fmt.Sprintf("run-%02d-%s", cell.Run, now.Format("20060102T150405Z")))
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return "", err
+	}
+	if err := os.Rename(p.CellDir(cell), destination); err != nil {
+		return "", err
+	}
+	entry, err := json.Marshal(struct {
+		Time     string `json:"time"`
+		Arm      string `json:"arm"`
+		Scenario string `json:"scenario"`
+		Run      int    `json:"run"`
+		Error    string `json:"error"`
+		Dir      string `json:"dir"`
+	}{now.Format(time.RFC3339), cell.Arm, cell.Scenario, cell.Run, cause, destination})
+	if err != nil {
+		return destination, err
+	}
+	log, err := os.OpenFile(filepath.Join(p.Target, InfraLogName), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return destination, err
+	}
+	_, writeErr := log.Write(append(entry, '\n'))
+	return destination, errors.Join(writeErr, log.Close())
 }
 
 func hasResult(dir string) bool {

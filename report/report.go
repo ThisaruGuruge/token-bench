@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"token-bench/result"
 	"token-bench/task"
@@ -161,6 +162,11 @@ func discover(paths []string) ([]discoveredResult, error) {
 		err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr
+			}
+			// Dot-directories hold staged skills and set-aside infrastructure
+			// failures, not results.
+			if entry.IsDir() && path != root && strings.HasPrefix(entry.Name(), ".") {
+				return filepath.SkipDir
 			}
 			if !entry.IsDir() && entry.Name() == "result.json" {
 				return add(path)

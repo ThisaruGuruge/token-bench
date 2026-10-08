@@ -63,6 +63,8 @@ type claude struct {
 	lastReply  string
 	costUSD    float64
 	costSeen   bool
+	// modelUsageSeen is set once a result carried modelUsage (cumulative).
+	modelUsageSeen bool
 }
 
 type runningProcess struct {
@@ -107,6 +109,8 @@ type resultEvent struct {
 	Result  string   `json:"result"`
 	IsError bool     `json:"is_error"`
 	Errors  []string `json:"errors"`
+	// APIErrorStatus is the HTTP status of the API error that ended the turn.
+	APIErrorStatus *int `json:"api_error_status"`
 	// TotalCostUSD is Claude Code's own cost for the turn; nil when absent.
 	TotalCostUSD *float64              `json:"total_cost_usd"`
 	Usage        resultUsage           `json:"usage"`
@@ -177,7 +181,7 @@ func (c *claude) Start(workingDir string, benchmark tracing.BenchmarkSpan) error
 	}
 	c.process = running
 	c.tokens = TokenCount{}
-	c.costUSD, c.costSeen = 0, false
+	c.costUSD, c.costSeen, c.modelUsageSeen = 0, false, false
 	c.lastReply = ""
 	return nil
 }
@@ -424,33 +428,46 @@ func (c *claude) SendMessage(message string) (string, error) {
 			}
 			c.addUsage(result)
 			c.lastReply = result.Result
-			return c.lastReply, nil
+			return c.lastReply, resultError(result)
 		case <-timer.C:
 			return "", errors.New("wait for Claude completion: timed out after 1h")
 		}
 	}
 }
 
+// addUsage folds one result event into the run totals. In a streaming-input
+// session Claude Code reports total_cost_usd and modelUsage as running totals
+// for the whole process (each result carries everything so far), so the latest
+// result replaces the previous totals; summing them would count every earlier
+// turn again after each correction. A crash or startup-error result may carry
+// zeroed totals, so a smaller value never replaces a larger one. usage, by
+// contrast, is per turn and main loop only; it is summed, and used only when
+// modelUsage is absent.
 func (c *claude) addUsage(result resultEvent) {
-	if result.TotalCostUSD != nil {
-		// Summed per result, like the token counts above. Whether Claude Code
-		// reports per-turn or cumulative cost in a multi-turn stream is
-		// unverified; the stream analyzer keeps each result's value.
-		c.costUSD += *result.TotalCostUSD
+	if result.TotalCostUSD != nil && (!c.costSeen || *result.TotalCostUSD >= c.costUSD) {
+		c.costUSD = *result.TotalCostUSD
 		c.costSeen = true
 	}
 	if len(result.ModelUsage) == 0 {
-		c.tokens.Input += result.Usage.Input
-		c.tokens.Output += result.Usage.Output
-		c.tokens.CacheRead += result.Usage.CacheRead
-		c.tokens.CacheWrite += result.Usage.CacheWrite
-	} else {
-		for _, usage := range result.ModelUsage {
-			c.tokens.Input += usage.Input
-			c.tokens.Output += usage.Output
-			c.tokens.CacheRead += usage.CacheRead
-			c.tokens.CacheWrite += usage.CacheWrite
+		if !c.modelUsageSeen {
+			c.tokens.Input += result.Usage.Input
+			c.tokens.Output += result.Usage.Output
+			c.tokens.CacheRead += result.Usage.CacheRead
+			c.tokens.CacheWrite += result.Usage.CacheWrite
 		}
+	} else {
+		var cumulative TokenCount
+		for _, usage := range result.ModelUsage {
+			cumulative.Input += usage.Input
+			cumulative.Output += usage.Output
+			cumulative.CacheRead += usage.CacheRead
+			cumulative.CacheWrite += usage.CacheWrite
+		}
+		cumulative.Total = cumulative.Input + cumulative.Output + cumulative.CacheRead + cumulative.CacheWrite
+		if !c.modelUsageSeen || cumulative.Total >= c.tokens.Total {
+			c.tokens = cumulative
+		}
+		c.modelUsageSeen = true
 	}
 	c.tokens.Total = c.tokens.Input + c.tokens.Output + c.tokens.CacheRead + c.tokens.CacheWrite
 }
@@ -547,7 +564,26 @@ func (c *claude) processFailure(prefix string, running *runningProcess) error {
 			}
 		}
 	}
-	return errors.New(strings.Join(parts, ": "))
+	return &shared.InfraError{Err: errors.New(strings.Join(parts, ": "))}
+}
+
+// resultError classifies a result event that did not end the turn normally.
+// A turn ended by an API error (is_error on a success result, or an
+// api_error_status) and error_during_execution are infrastructure failures; a
+// spend or turn cap is an agent outcome. Anything else completes the turn.
+func resultError(result resultEvent) error {
+	detail := strings.TrimSpace(strings.Join(append([]string{result.Result}, result.Errors...), "; "))
+	switch {
+	case result.Subtype == "error_max_budget_usd" || result.Subtype == "error_max_turns":
+		return &shared.StopError{Reason: result.Subtype, Detail: detail}
+	case result.APIErrorStatus != nil:
+		return &shared.InfraError{Err: fmt.Errorf("Claude API error (HTTP %d): %s", *result.APIErrorStatus, detail)}
+	case result.Subtype == "error_during_execution":
+		return &shared.InfraError{Err: fmt.Errorf("Claude Code error_during_execution: %s", detail)}
+	case result.IsError:
+		return &shared.InfraError{Err: fmt.Errorf("Claude turn ended on an error (%s): %s", result.Subtype, detail)}
+	}
+	return nil
 }
 
 func (c *claude) cleanupPlugin() error {

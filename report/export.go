@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"math"
 	"sort"
 	"strconv"
 
@@ -11,10 +12,11 @@ import (
 	"token-bench/streamlog"
 )
 
-// SummaryRow aggregates every run of one arm on one scenario, language and
-// model. Medians are over all runs, failed ones included, because a failed run
-// still spent its tokens, money and time. Cost and duration medians skip runs
-// that recorded no value.
+// SummaryRow aggregates every valid run of one arm on one scenario, language
+// and model. Medians are over all valid runs, failed ones included, because a
+// failed run still spent its tokens, money and time. Cost and duration medians
+// skip runs that recorded no value. Infrastructure failures are not runs of the
+// agent: they are counted in InfraFailures and left out of everything else.
 type SummaryRow struct {
 	Arm                   string
 	Scenario              string
@@ -22,6 +24,7 @@ type SummaryRow struct {
 	Model                 string
 	Runs                  int
 	Passed                int
+	InfraFailures         int
 	MedianTokens          float64
 	MedianCorrections     float64
 	MedianCostUSD         float64
@@ -41,15 +44,36 @@ func (s SummaryRow) PassRate() float64 {
 	return float64(s.Passed) / float64(s.Runs) * 100
 }
 
+// PassInterval is the 95% Wilson score interval of the pass rate, in percent.
+func (s SummaryRow) PassInterval() (low, high float64) {
+	if s.Runs == 0 {
+		return 0, 100
+	}
+	const z = 1.959963984540054
+	n, p := float64(s.Runs), float64(s.Passed)/float64(s.Runs)
+	center := (p + z*z/(2*n)) / (1 + z*z/n)
+	margin := z / (1 + z*z/n) * math.Sqrt(p*(1-p)/n+z*z/(4*n*n))
+	return math.Max(0, center-margin) * 100, math.Min(1, center+margin) * 100
+}
+
+// PassIntervalLabel renders the interval as "low-high%".
+func (s SummaryRow) PassIntervalLabel() string {
+	low, high := s.PassInterval()
+	return fmt.Sprintf("%.0f-%.0f%%", low, high)
+}
+
 // ArmLabel is the arm shown in tables; "-" when none was recorded.
 func (s SummaryRow) ArmLabel() string { return armLabel(s.Arm) }
 
+// runCost is the run's cost for summaries: Claude Code's own total_cost_usd
+// when recorded (it covers every API call and knows the cache TTLs), else the
+// price-table estimate.
 func runCost(run result.Result) (float64, bool) {
-	if run.CostUSD != nil {
-		return *run.CostUSD, true
-	}
 	if run.ReportedCostUSD != nil {
 		return *run.ReportedCostUSD, true
+	}
+	if run.CostUSD != nil {
+		return *run.CostUSD, true
 	}
 	return 0, false
 }
@@ -83,9 +107,14 @@ func summarizeArms(discovered []discoveredResult) []SummaryRow {
 	rows := make([]SummaryRow, 0, len(keys))
 	for _, k := range keys {
 		runs := groups[k]
-		row := SummaryRow{Arm: k.arm, Scenario: k.scenario, Language: k.language, Model: k.model, Runs: len(runs)}
+		row := SummaryRow{Arm: k.arm, Scenario: k.scenario, Language: k.language, Model: k.model}
 		var tokens, corrections, costs, durations []float64
 		for _, run := range runs {
+			if run.InfraFailure {
+				row.InfraFailures++
+				continue
+			}
+			row.Runs++
 			if run.Passed {
 				row.Passed++
 			}
@@ -123,7 +152,8 @@ func medianOf(values []float64) float64 {
 var runColumns = []string{
 	"arm", "scenario", "language", "run", "requested_runs", "model", "passed", "corrections",
 	"input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens", "total_tokens",
-	"cost_usd", "reported_cost_usd", "duration_seconds",
+	"infra_failure", "stop_reason",
+	"cost_usd", "cost_estimate_basis", "reported_cost_usd", "duration_seconds",
 	"assistant_turns", "tool_calls", "bal_discover", "bal_search", "bal_pull", "bal_build", "bal_run",
 	"web_search", "web_fetch", "task_agent", "mcp", "ballerina_repo_reads",
 	"discover_visible", "bal_version", "bal_discover_version", "max_budget_usd", "error", "result_path",
@@ -182,7 +212,8 @@ func writeRunsCSV(discovered []discoveredResult, output io.Writer) error {
 			strconv.FormatBool(run.Passed), strconv.Itoa(run.Corrections),
 			strconv.Itoa(run.Tokens.Input), strconv.Itoa(run.Tokens.Output), strconv.Itoa(run.Tokens.CacheRead),
 			strconv.Itoa(run.Tokens.CacheWrite), strconv.Itoa(run.Tokens.Total),
-			optionalFloat(run.CostUSD), optionalFloat(run.ReportedCostUSD), duration,
+			strconv.FormatBool(run.InfraFailure), run.StopReason,
+			optionalFloat(run.CostUSD), run.CostEstimateBasis, optionalFloat(run.ReportedCostUSD), duration,
 			turns, calls,
 			family(streamlog.FamilyBalDiscover), family(streamlog.FamilyBalSearch), family(streamlog.FamilyBalPull),
 			family(streamlog.FamilyBalBuild), family(streamlog.FamilyBalRun),
@@ -200,6 +231,7 @@ func writeRunsCSV(discovered []discoveredResult, output io.Writer) error {
 
 var summaryColumns = []string{
 	"arm", "scenario", "language", "model", "runs", "passed", "pass", "pass_rate_percent",
+	"pass_rate_ci95_low_percent", "pass_rate_ci95_high_percent", "infra_failures",
 	"median_total_tokens", "median_cost_usd", "median_duration_seconds", "median_corrections",
 }
 
@@ -225,9 +257,11 @@ func writeSummaryCSV(rows []SummaryRow, output io.Writer) error {
 		if row.HasDuration {
 			duration = strconv.FormatFloat(row.MedianDurationSeconds, 'f', 1, 64)
 		}
+		low, high := row.PassInterval()
 		record := []string{
 			row.Arm, row.Scenario, row.Language, row.Model, strconv.Itoa(row.Runs), strconv.Itoa(row.Passed), row.PassFraction(),
 			strconv.FormatFloat(row.PassRate(), 'f', 1, 64),
+			strconv.FormatFloat(low, 'f', 1, 64), strconv.FormatFloat(high, 'f', 1, 64), strconv.Itoa(row.InfraFailures),
 			strconv.FormatFloat(row.MedianTokens, 'f', 0, 64), cost, duration,
 			strconv.FormatFloat(row.MedianCorrections, 'f', 1, 64),
 		}

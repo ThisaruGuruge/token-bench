@@ -1,13 +1,17 @@
 package main
 
 import (
+	"errors"
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"token-bench/harness"
+	benchresult "token-bench/result"
+	"token-bench/streamlog"
 	"token-bench/task"
 	"token-bench/tracing"
 )
@@ -18,6 +22,7 @@ type fakeHarness struct {
 	stream    string
 	reported  *float64
 	delay     time.Duration
+	sendErr   error
 }
 
 func (f *fakeHarness) Model() string          { return f.model }
@@ -28,7 +33,7 @@ func (f *fakeHarness) Start(directory string, _ tracing.BenchmarkSpan) error {
 }
 func (f *fakeHarness) SendMessage(string) (string, error) {
 	time.Sleep(f.delay)
-	return "done", nil
+	return "done", f.sendErr
 }
 func (f *fakeHarness) TokenCount() (harness.TokenCount, error) {
 	return harness.TokenCount{Input: 1_000_000, Output: 100_000, Total: 1_100_000}, nil
@@ -111,5 +116,57 @@ func TestExecuteRunWithoutStreamLogOrKnownPrice(t *testing.T) {
 	}
 	if result.DurationSeconds <= 0 {
 		t.Errorf("duration = %v", result.DurationSeconds)
+	}
+}
+
+func TestEstimatedCostPrefersStreamUsageWithCacheTTL(t *testing.T) {
+	result := runResult{
+		Model:  "sonnet",
+		Tokens: benchresult.TokenCount{Input: 1_000_000, CacheWrite: 1_000_000},
+		ToolUsage: &streamlog.Summary{Models: map[string]streamlog.ModelUsage{
+			"claude-sonnet-5-5": {Input: 1_000_000, CacheWrite1h: 500_000, CacheWriteUnsplit: 500_000},
+		}},
+	}
+	applyEstimatedCost(&result)
+	// $2 input + 1M 1-hour writes at $4 (unsplit writes priced at 1 hour).
+	if result.CostUSD == nil || math.Abs(*result.CostUSD-6) > 1e-9 || result.CostEstimateBasis != benchresult.CostBasisStreamUsage {
+		t.Fatalf("cost = %v (%s), want 6 (stream-usage)", result.CostUSD, result.CostEstimateBasis)
+	}
+
+	// An unpriced model in the stream falls back to the token totals.
+	result.ToolUsage.Models["mystery-model"] = streamlog.ModelUsage{Input: 1}
+	applyEstimatedCost(&result)
+	// $2 input + 1M 5-minute writes at $2.50.
+	if math.Abs(*result.CostUSD-4.5) > 1e-9 || result.CostEstimateBasis != benchresult.CostBasisTokenTotals {
+		t.Fatalf("fallback cost = %v (%s), want 4.5 (token-totals)", *result.CostUSD, result.CostEstimateBasis)
+	}
+}
+
+type failingSetupHandle struct{ fakeHandle }
+
+func (failingSetupHandle) Setup() (func() error, error) {
+	return nil, errors.New("start MySQL container: docker daemon not running")
+}
+
+func TestExecuteRunClassifiesFailures(t *testing.T) {
+	definition := task.Task{
+		Name:      "fake",
+		Resources: task.Resources{NPorts: 1},
+		InitFn:    func(task.AllocResources) task.TaskHandle { return failingSetupHandle{} },
+	}
+	current := runResult{Task: "fake", Language: "go", Harness: "claude", Run: 1, RequestedRuns: 1}
+	setup := executeRun(current, t.TempDir(), definition, fakeLanguage{}, func() harness.Harness { return &fakeHarness{model: "sonnet"} }, nil)
+	if !setup.InfraFailure || setup.Passed || !strings.Contains(setup.Error, "docker daemon") {
+		t.Errorf("setup failure: %+v", setup)
+	}
+
+	api := runFake(t, &fakeHarness{model: "sonnet", sendErr: &harness.InfraError{Err: errors.New("Claude API error (HTTP 529)")}}, "A")
+	if !api.InfraFailure || api.StopReason != "" {
+		t.Errorf("API failure: infra=%v stop=%q", api.InfraFailure, api.StopReason)
+	}
+
+	budget := runFake(t, &fakeHarness{model: "sonnet", sendErr: &harness.StopError{Reason: "error_max_budget_usd"}}, "A")
+	if budget.InfraFailure || budget.StopReason != "error_max_budget_usd" || budget.Passed {
+		t.Errorf("budget stop: infra=%v stop=%q passed=%v", budget.InfraFailure, budget.StopReason, budget.Passed)
 	}
 }

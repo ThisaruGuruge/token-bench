@@ -2,11 +2,14 @@ package claude
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"token-bench/harness/internal/shared"
 )
 
 func TestReportsConfiguredModelAndThinkingBudget(t *testing.T) {
@@ -90,8 +93,16 @@ printf '%s\n' 'fake Claude closed' >&2
 
 	for index, message := range []string{"initial prompt", "correction"} {
 		reply, err := agent.SendMessage(message)
-		if err != nil {
+		// The second result is error_during_execution: it still completes the
+		// turn, but as an infrastructure failure.
+		if index == 0 && err != nil {
 			t.Fatal(err)
+		}
+		if index == 1 {
+			var infra *shared.InfraError
+			if !errors.As(err, &infra) {
+				t.Fatalf("error_during_execution must be an infrastructure error, got %v", err)
+			}
 		}
 		expected := "reply-" + string(rune('1'+index))
 		if reply != expected {
@@ -102,7 +113,9 @@ printf '%s\n' 'fake Claude closed' >&2
 	if err != nil {
 		t.Fatal(err)
 	}
-	if usage.Input != 32 || usage.Output != 44 || usage.CacheRead != 52 || usage.CacheWrite != 68 || usage.Total != 196 {
+	// modelUsage is a running total for the process, so the second result's
+	// identical totals mean no new usage, not a second copy of it.
+	if usage.Input != 16 || usage.Output != 22 || usage.CacheRead != 26 || usage.CacheWrite != 34 || usage.Total != 98 {
 		t.Fatalf("unexpected subagent-inclusive usage: %+v", usage)
 	}
 	if err := agent.End(); err != nil {
@@ -133,7 +146,28 @@ func TestResultUsageFallsBackWhenModelUsageIsUnavailable(t *testing.T) {
 	}
 }
 
-func TestReportedCostIsSummedAcrossResults(t *testing.T) {
+func TestPerTurnUsageIsSummedWithoutModelUsage(t *testing.T) {
+	agent := New(Config{})
+	agent.addUsage(resultEvent{Usage: resultUsage{Input: 2, Output: 3}})
+	agent.addUsage(resultEvent{Usage: resultUsage{Input: 1, Output: 1}})
+	if agent.tokens != (TokenCount{Input: 3, Output: 4, Total: 7}) {
+		t.Fatalf("unexpected per-turn usage: %+v", agent.tokens)
+	}
+}
+
+func decodeResult(t *testing.T, raw string) resultEvent {
+	t.Helper()
+	var event resultEvent
+	if err := json.Unmarshal([]byte(raw), &event); err != nil {
+		t.Fatal(err)
+	}
+	return event
+}
+
+// Claude Code reports total_cost_usd and modelUsage as running totals in a
+// streaming-input session, so a correction turn must not count the first turn
+// twice.
+func TestCumulativeResultTotalsAreNotSummed(t *testing.T) {
 	agent := New(Config{})
 	if _, ok := agent.ReportedCostUSD(); ok {
 		t.Fatal("no cost expected before any result")
@@ -142,17 +176,29 @@ func TestReportedCostIsSummedAcrossResults(t *testing.T) {
 	if _, ok := agent.ReportedCostUSD(); ok {
 		t.Fatal("a result without total_cost_usd must not report a cost")
 	}
-	var first, second resultEvent
-	if err := json.Unmarshal([]byte(`{"type":"result","total_cost_usd":0.25}`), &first); err != nil {
-		t.Fatal(err)
+	agent.addUsage(decodeResult(t, `{"type":"result","total_cost_usd":0.25,
+		"usage":{"input_tokens":10,"output_tokens":20},
+		"modelUsage":{"claude-sonnet-5-5":{"inputTokens":10,"outputTokens":20,"cacheReadInputTokens":100,"cacheCreationInputTokens":50}}}`))
+	agent.addUsage(decodeResult(t, `{"type":"result","total_cost_usd":0.5,
+		"usage":{"input_tokens":4,"output_tokens":6},
+		"modelUsage":{"claude-sonnet-5-5":{"inputTokens":14,"outputTokens":26,"cacheReadInputTokens":300,"cacheCreationInputTokens":60},
+		"claude-haiku-5-5":{"inputTokens":1,"outputTokens":2}}}`))
+	if cost, ok := agent.ReportedCostUSD(); !ok || cost != 0.5 {
+		t.Fatalf("cost = %v, %v; want 0.5, true", cost, ok)
 	}
-	if err := json.Unmarshal([]byte(`{"type":"result","total_cost_usd":0.5}`), &second); err != nil {
-		t.Fatal(err)
+	want := TokenCount{Input: 15, Output: 28, CacheRead: 300, CacheWrite: 60, Total: 403}
+	if agent.tokens != want {
+		t.Fatalf("tokens = %+v; want %+v", agent.tokens, want)
 	}
-	agent.addUsage(first)
-	agent.addUsage(second)
-	if cost, ok := agent.ReportedCostUSD(); !ok || cost != 0.75 {
-		t.Fatalf("cost = %v, %v; want 0.75, true", cost, ok)
+
+	// A crash result with zeroed totals must not wipe what was measured.
+	agent.addUsage(decodeResult(t, `{"type":"result","subtype":"error_during_execution","total_cost_usd":0,
+		"modelUsage":{"claude-sonnet-5-5":{}}}`))
+	if cost, _ := agent.ReportedCostUSD(); cost != 0.5 {
+		t.Fatalf("cost after zeroed result = %v; want 0.5", cost)
+	}
+	if agent.tokens != want {
+		t.Fatalf("tokens after zeroed result = %+v; want %+v", agent.tokens, want)
 	}
 }
 
@@ -273,6 +319,33 @@ func TestEnvAndArgumentsAreAppliedToTheProcess(t *testing.T) {
 	for _, want := range []string{"cache=/per/run", "marker=on", "--plugin-dir /plugin"} {
 		if !strings.Contains(string(content), want) {
 			t.Errorf("process did not see %q:\n%s", want, content)
+		}
+	}
+}
+
+func TestResultErrorClassification(t *testing.T) {
+	tests := []struct {
+		raw   string
+		infra bool
+		stop  string
+	}{
+		{`{"type":"result","subtype":"success","result":"done"}`, false, ""},
+		{`{"type":"result","subtype":"success","is_error":true,"api_error_status":529,"result":"API Error: 529 overloaded"}`, true, ""},
+		{`{"type":"result","subtype":"success","is_error":true,"result":"API Error: auth"}`, true, ""},
+		{`{"type":"result","subtype":"error_during_execution","is_error":true}`, true, ""},
+		{`{"type":"result","subtype":"error_max_budget_usd","is_error":true}`, false, "error_max_budget_usd"},
+		{`{"type":"result","subtype":"error_max_turns","is_error":true}`, false, "error_max_turns"},
+	}
+	for _, test := range tests {
+		err := resultError(decodeResult(t, test.raw))
+		var infra *shared.InfraError
+		var stop *shared.StopError
+		gotStop := ""
+		if errors.As(err, &stop) {
+			gotStop = stop.Reason
+		}
+		if errors.As(err, &infra) != test.infra || gotStop != test.stop {
+			t.Errorf("%s: got %v, want infra=%v stop=%q", test.raw, err, test.infra, test.stop)
 		}
 	}
 }

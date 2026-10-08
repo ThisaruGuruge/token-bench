@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"token-bench/result"
 )
 
 func testPlan(t *testing.T) Plan {
@@ -125,6 +127,56 @@ func TestDryRunReportsPlanCountsAndWorstCase(t *testing.T) {
 	}
 }
 
+// writeResult writes a valid result.json for cell, as token-bench would.
+func writeResult(t *testing.T, plan Plan, cell Cell, infra bool) {
+	t.Helper()
+	path := filepath.Join(plan.CellDir(cell), "x", "result.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	value := result.Result{
+		SchemaVersion: result.SchemaVersion, Task: cell.Scenario, Language: "ballerina", Harness: "claude",
+		Model: "sonnet", ThinkingBudget: "high", Run: cell.Run, RequestedRuns: plan.Runs, Arm: cell.Arm,
+	}
+	if infra {
+		value.InfraFailure, value.Error = true, "start MySQL container: docker daemon not running"
+	}
+	if err := result.Write(path, value); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestExecuteSetsInfraFailuresAsideAndRetriesThem(t *testing.T) {
+	plan := testPlan(t)
+	ordered := plan.Enumerate()
+	infraOnce := map[Cell]bool{ordered[0]: true}
+	executor := func(cell Cell, args []string) error {
+		writeResult(t, plan, cell, infraOnce[cell])
+		delete(infraOnce, cell)
+		return nil
+	}
+	var out bytes.Buffer
+	first := plan.Execute(&out, ordered, RunnerArgs{}, executor)
+	if first.Ran != 5 || len(first.Infra) != 1 || first.Infra[0] != ordered[0] || plan.Done(ordered[0]) {
+		t.Fatalf("an infrastructure failure must not complete its cell: %+v", first)
+	}
+	if _, err := os.Stat(plan.CellDir(ordered[0])); !os.IsNotExist(err) {
+		t.Errorf("the failed run directory must be moved out of the result tree: %v", err)
+	}
+	moved, _ := filepath.Glob(filepath.Join(plan.Target, InfraFailuresDir, ordered[0].Arm, ordered[0].Scenario, "run-01-*", "x", "result.json"))
+	if len(moved) != 1 {
+		t.Errorf("set-aside result not found: %v", moved)
+	}
+	log, err := os.ReadFile(filepath.Join(plan.Target, InfraLogName))
+	if err != nil || !strings.Contains(string(log), "docker daemon not running") || strings.Count(string(log), "\n") != 1 {
+		t.Errorf("infra log = %q, %v", log, err)
+	}
+	second := plan.Execute(&out, ordered, RunnerArgs{}, executor)
+	if second.Ran != 1 || len(second.Infra) != 0 || !plan.Done(ordered[0]) {
+		t.Fatalf("the retry must complete the cell: %+v", second)
+	}
+}
+
 func TestExecuteIsResumableAndRetriesCellsWithoutResult(t *testing.T) {
 	plan := testPlan(t)
 	ordered := plan.Enumerate()
@@ -135,13 +187,7 @@ func TestExecuteIsResumableAndRetriesCellsWithoutResult(t *testing.T) {
 		if failures[cell] {
 			return errors.New("docker not running")
 		}
-		path := filepath.Join(plan.CellDir(cell), "x", "result.json")
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte("{}"), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		writeResult(t, plan, cell, false)
 		if cell == ordered[2] {
 			return errors.New("agent failed validation")
 		}

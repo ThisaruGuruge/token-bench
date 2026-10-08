@@ -3,6 +3,8 @@ package report
 import (
 	"bytes"
 	"encoding/csv"
+	"math"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -146,7 +148,42 @@ func TestSummaryKeepsModelsAndMissingValuesApart(t *testing.T) {
 	if err := writeSummaryCSV(rows, &output); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "0/1,0.0,0,,,0.0") {
+	if !strings.Contains(output.String(), "0/1,0.0,0.0,79.3,0,0,,,0.0") {
 		t.Errorf("empty cost and duration expected:\n%s", output.String())
+	}
+}
+
+func TestSummaryLeavesInfrastructureFailuresOut(t *testing.T) {
+	base := result.Result{SchemaVersion: result.SchemaVersion, Task: "checkout-sync", Language: "ballerina", Harness: "claude",
+		Model: "sonnet", ThinkingBudget: "high", Arm: "A", RequestedRuns: 3}
+	passed, failed, infra := base, base, base
+	passed.Run, passed.Passed, passed.Tokens.Total = 1, true, 100
+	failed.Run, failed.Tokens.Total = 2, 300
+	infra.Run, infra.InfraFailure, infra.Error = 3, true, "docker daemon not running"
+	rows := summarizeArms([]discoveredResult{{value: passed}, {value: failed}, {value: infra}})
+	if len(rows) != 1 || rows[0].Runs != 2 || rows[0].Passed != 1 || rows[0].InfraFailures != 1 || rows[0].MedianTokens != 200 {
+		t.Fatalf("unexpected row %+v", rows)
+	}
+	// 1/2: Wilson 95% interval 9.5% to 90.5%.
+	if low, high := rows[0].PassInterval(); math.Abs(low-9.45) > 0.1 || math.Abs(high-90.55) > 0.1 {
+		t.Errorf("interval = %.2f-%.2f", low, high)
+	}
+}
+
+func TestDiscoverSkipsDotDirectories(t *testing.T) {
+	root := t.TempDir()
+	value := result.Result{SchemaVersion: result.SchemaVersion, Task: "checkout-sync", Language: "ballerina", Harness: "claude",
+		Model: "sonnet", ThinkingBudget: "high", Run: 1, RequestedRuns: 1}
+	for _, dir := range []string{"A/checkout-sync/run-01/x", ".infra-failures/A/checkout-sync/run-01-20261008T000000Z/x"} {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := result.Write(filepath.Join(root, dir, "result.json"), value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	found, err := discover([]string{root})
+	if err != nil || len(found) != 1 {
+		t.Fatalf("found %d results (%v); want only the one outside dot-directories", len(found), err)
 	}
 }

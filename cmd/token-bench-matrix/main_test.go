@@ -84,7 +84,7 @@ func TestRunsCellsThroughTheRunnerAndResumes(t *testing.T) {
 	dir := t.TempDir()
 	log := filepath.Join(dir, "calls.log")
 	runner := filepath.Join(dir, "fake-token-bench")
-	script := "#!/bin/sh\necho \"$*\" >> '" + log + "'\nfor a in \"$@\"; do case \"$a\" in --target=*) t=${a#--target=};; esac; done\nmkdir -p \"$t/run\" && echo '{}' > \"$t/run/result.json\"\n"
+	script := "#!/bin/sh\necho \"$*\" >> '" + log + "'\nfor a in \"$@\"; do case \"$a\" in --target=*) t=${a#--target=};; esac; done\nn=1; for a in \"$@\"; do case \"$a\" in --run-number=*) n=${a#--run-number=};; esac; done\nmkdir -p \"$t/run\" && printf '{\"schemaVersion\":5,\"task\":\"checkout-sync\",\"language\":\"ballerina\",\"harness\":\"claude\",\"model\":\"sonnet\",\"thinkingBudget\":\"high\",\"run\":%s,\"requestedRuns\":9}' \"$n\" > \"$t/run/result.json\"\n"
 	if err := os.WriteFile(runner, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}

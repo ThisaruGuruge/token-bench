@@ -251,16 +251,14 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 	}
 	ports, err := allocatePorts(definition.Resources.NPorts)
 	if err != nil {
-		result.Error = err.Error()
-		return result
+		return infrastructureFailure(result, err)
 	}
 	allocated := task.AllocResources{Ports: ports}
 	defer allocated.Cleanup()
 	handle := definition.InitFn(allocated)
 	cleanupTask, err := handle.Setup()
 	if err != nil {
-		result.Error = err.Error()
-		return result
+		return infrastructureFailure(result, err)
 	}
 	defer func() {
 		if err := cleanupTask(); err != nil {
@@ -269,12 +267,10 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 	}()
 
 	if len(ports) == 0 {
-		result.Error = "task allocated no application port"
-		return result
+		return infrastructureFailure(result, errors.New("task allocated no application port"))
 	}
 	if err := agent.Start(directory, benchmark); err != nil {
-		result.Error = err.Error()
-		return result
+		return infrastructureFailure(result, err)
 	}
 	defer func() {
 		if count, err := agent.TokenCount(); err == nil {
@@ -291,18 +287,17 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 		if reported, ok := agent.ReportedCostUSD(); ok {
 			result.ReportedCostUSD = &reported
 		}
-		applyEstimatedCost(&result)
 		if err := attachToolUsage(&result, filepath.Join(directory, harness.ClaudeStreamArtifact)); err != nil {
 			result.Error = joinErrors(result.Error, err.Error())
 		}
+		applyEstimatedCost(&result)
 	}()
 	started := time.Now()
 	defer func() { result.DurationSeconds = time.Since(started).Seconds() }()
 
 	requirements, err := handle.Prompt()
 	if err != nil {
-		result.Error = err.Error()
-		return result
+		return infrastructureFailure(result, err)
 	}
 	prompt, err := task.RenderPrompt(task.PromptConfig{
 		Language:          implementation.Name(),
@@ -313,12 +308,10 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 		Requirements:      requirements,
 	})
 	if err != nil {
-		result.Error = err.Error()
-		return result
+		return infrastructureFailure(result, err)
 	}
 	if _, err := agent.SendMessage(prompt); err != nil {
-		result.Error = err.Error()
-		return result
+		return agentFailure(result, err)
 	}
 
 	for {
@@ -336,8 +329,9 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 			}
 		}
 		if err != nil {
-			result.Error = err.Error()
-			return result
+			// Feedback and Validation report the agent's mistakes as feedback;
+			// an error means the task's own checks or backends failed.
+			return infrastructureFailure(result, err)
 		}
 		if result.Passed {
 			return result
@@ -352,17 +346,61 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 		}
 		result.Corrections++
 		if _, err := agent.SendMessage(feedback); err != nil {
-			result.Error = err.Error()
-			return result
+			return agentFailure(result, err)
 		}
 	}
 }
 
-// applyEstimatedCost fills CostUSD from the price table; models missing from
-// the table leave it unset.
+// infrastructureFailure records err as a failure of the benchmark machinery
+// (ports, Docker backends, the task's checks): the run is invalid and is rerun.
+func infrastructureFailure(result runResult, err error) runResult {
+	result.Error = joinErrors(result.Error, err.Error())
+	result.InfraFailure = true
+	return result
+}
+
+// agentFailure records an error from the agent harness, classifying a harness
+// or model API failure as infrastructure and a spend or turn cap as a stop.
+func agentFailure(result runResult, err error) runResult {
+	result.Error = joinErrors(result.Error, err.Error())
+	if harness.IsInfrastructure(err) {
+		result.InfraFailure = true
+	}
+	if reason, ok := harness.StopReason(err); ok {
+		result.StopReason = reason
+	}
+	return result
+}
+
+// applyEstimatedCost fills CostUSD from the price table. It prefers the
+// per-model usage parsed from the stream log, which names the resolved model
+// of every call (subagents included) and splits cache writes by TTL; writes
+// without a TTL breakdown are priced at the 1-hour rate, the one Claude Code
+// normally uses. Otherwise it prices the token totals at the run's model with
+// 5-minute cache writes. A model missing from the table leaves CostUSD unset.
 func applyEstimatedCost(result *runResult) {
+	if result.ToolUsage != nil && len(result.ToolUsage.Models) > 0 {
+		total, complete := 0.0, true
+		for model, usage := range result.ToolUsage.Models {
+			cost, ok := pricing.UsageCost(model, pricing.Usage{
+				Input: usage.Input, Output: usage.Output, CacheRead: usage.CacheRead,
+				CacheWrite5m: usage.CacheWrite5m, CacheWrite1h: usage.CacheWrite1h + usage.CacheWriteUnsplit,
+			})
+			if !ok {
+				complete = false
+				break
+			}
+			total += cost
+		}
+		if complete {
+			result.CostUSD = &total
+			result.CostEstimateBasis = benchresult.CostBasisStreamUsage
+			return
+		}
+	}
 	if cost, ok := pricing.Cost(result.Model, result.Tokens); ok {
 		result.CostUSD = &cost
+		result.CostEstimateBasis = benchresult.CostBasisTokenTotals
 	}
 }
 
