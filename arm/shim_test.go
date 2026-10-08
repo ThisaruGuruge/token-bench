@@ -23,6 +23,12 @@ if [ "$1" = "tool" ] && [ "$2" = "list" ]; then
   printf '|TOOL ID|VERSION|\n|----|----|\n|discover |0.1.0 [repo = local]|\n|openapi |2.4.2|\n'
   exit 3
 fi
+if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+  if [ -z "$2" ]; then
+    printf '   Tool Commands:\n        asyncapi                  Generate sources.\n        discover                  Learn a library API\n                                  without leaving the terminal.\n        graphql                   Generates clients\n                                  for GraphQL.\n'
+    exit 0
+  fi
+fi
 printf 'real-bal %s\n' "$*"
 `
 	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
@@ -89,6 +95,23 @@ func TestShimHidesDiscoverFromToolListAndKeepsExitStatus(t *testing.T) {
 	}
 	if strings.Contains(stdout, "discover") || !strings.Contains(stdout, "openapi") {
 		t.Errorf("unexpected tool list %q", stdout)
+	}
+}
+
+func TestShimHidesDiscoverFromTopLevelHelp(t *testing.T) {
+	dir := t.TempDir()
+	if err := WriteBalShim(dir, fakeBal(t)); err != nil {
+		t.Fatal(err)
+	}
+	want := "   Tool Commands:\n        asyncapi                  Generate sources.\n        graphql                   Generates clients\n                                  for GraphQL.\n"
+	for _, args := range [][]string{nil, {"help"}, {"--help"}, {"-h"}} {
+		stdout, _, exit := runShim(t, filepath.Join(dir, "bal"), args...)
+		if exit != 0 || stdout != want {
+			t.Errorf("bal %v: exit %d, output %q; want %q", args, exit, stdout, want)
+		}
+	}
+	if stdout, _, _ := runShim(t, filepath.Join(dir, "bal"), "help", "build"); !strings.Contains(stdout, "real-bal help build") {
+		t.Errorf("help for a command must be forwarded untouched: %q", stdout)
 	}
 }
 

@@ -93,7 +93,9 @@ const UnknownCommandMessage = "ballerina: unknown command '%s'\nRun 'bal help' f
 
 // WriteBalShim writes dir/bal, a wrapper that forwards to realBal except for
 // the discover subcommand (`bal discover ...`, `bal help discover`), which
-// fails like an unknown command, and `bal tool list`, whose discover row is
+// fails like an unknown command, and the outputs that list installed tools:
+// `bal tool list` and the top-level help (`bal`, `bal help`, `bal --help`,
+// `bal -h`, which show a "Tool Commands" section), whose discover row is
 // dropped so the tool cannot be learnt from there.
 func WriteBalShim(dir, realBal string) error {
 	if !filepath.IsAbs(realBal) {
@@ -119,6 +121,16 @@ if [ "$1" = "tool" ] && [ "$2" = "list" ]; then
   output=$("$REAL_BAL" "$@")
   status=$?
   printf '%%s\n' "$output" | grep -v '^|discover[ |]'
+  exit $status
+fi
+if [ $# -eq 0 ] || { [ $# -eq 1 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; }; }; then
+  output=$("$REAL_BAL" "$@")
+  status=$?
+  # Drop the discover row of "Tool Commands" and any wrapped description lines.
+  printf '%%s\n' "$output" | awk '
+    /^[ \t]+discover([ \t]|$)/ { skip = 1; next }
+    skip && /^[ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t][ \t]/ { next }
+    { skip = 0; print }'
   exit $status
 fi
 exec "$REAL_BAL" "$@"
