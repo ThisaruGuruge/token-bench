@@ -349,3 +349,28 @@ func TestResultErrorClassification(t *testing.T) {
 		}
 	}
 }
+
+func TestAPIKeyHelperIsTheOnlyCredentialSource(t *testing.T) {
+	helper := "security find-generic-password -s token-bench-anthropic-api-key -w"
+	agent := New(Config{APIKeyHelper: helper, Env: []string{"XDG_CACHE_HOME=/tmp/x"}})
+	arguments := agent.startArguments()
+	last := arguments[len(arguments)-2:]
+	if last[0] != "--settings" || last[1] != `{"apiKeyHelper":"security find-generic-password -s token-bench-anthropic-api-key -w"}` {
+		t.Fatalf("settings not passed: %#v", last)
+	}
+	environment := agent.processEnvironment([]string{"PATH=/bin", "ANTHROPIC_API_KEY=user-key", "CLAUDE_CODE_OAUTH_TOKEN=t", "ANTHROPIC_BASE_URL=http://proxy", "HOME=/h"})
+	want := []string{"PATH=/bin", "HOME=/h", "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1", "XDG_CACHE_HOME=/tmp/x"}
+	if !reflect.DeepEqual(environment, want) {
+		t.Fatalf("environment = %#v, want %#v", environment, want)
+	}
+
+	inherited := New(Config{})
+	if got := inherited.processEnvironment([]string{"ANTHROPIC_API_KEY=user-key"}); got[0] != "ANTHROPIC_API_KEY=user-key" {
+		t.Fatalf("without a helper the inherited credentials stay: %#v", got)
+	}
+	for _, argument := range inherited.startArguments() {
+		if argument == "--settings" {
+			t.Fatal("no --settings without a helper")
+		}
+	}
+}

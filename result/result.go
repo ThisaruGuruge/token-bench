@@ -59,6 +59,9 @@ type Environment struct {
 	ExtraSystemPrompt string `json:"extraSystemPrompt,omitempty"`
 	// MaxBudgetUSD is the per-run cap handed to the harness.
 	MaxBudgetUSD float64 `json:"maxBudgetUsd,omitempty"`
+	// Credentials names the credential source (never the credential):
+	// "apiKeyHelper: <command>" or "inherited".
+	Credentials string `json:"credentials,omitempty"`
 }
 
 // Result is the persisted outcome and normalized CLI configuration for one run.

@@ -216,6 +216,17 @@ An `--arm` label with no definition in the arms directory (for example `--arm=ba
 
 Arm E limitations. The plugin's `.mcp.json` and hooks use `${CLAUDE_PLUGIN_ROOT}`, which Claude Code expands to the plugin directory, so loading the repository root with `--plugin-dir` is expected to start the `ballerina-library` MCP server (needs `node` on PATH) and the hooks (need `bash` and `jq`). This has been checked statically only (`claude plugin validate`, reading the manifests and the help text), not with a live session. Arm E also exposes the plugin's LSP server (`bal start-language-server`), which arms B and D do not have, so E differs from the others by more than the library lookup. Verify arm E on the first real run: the first line of `claude-stream.jsonl` (`system`/`init`) lists the loaded tools, agents and MCP servers; `ballerina-library` should be connected and the `library` agent present. Also count `bal discover` in `result.json` `toolUsage.families` for arms A, B and E: it must be zero.
 
+### Benchmark credentials
+
+The agent is Claude Code itself, run headless (`claude -p`), so a run bills to whatever credential Claude Code uses. To keep a dedicated benchmark key out of every other Claude Code session and agent, `token-bench` makes an API key helper the only credential source of the `claude` processes it starts:
+
+- Store the key once in the macOS Keychain (the command prompts for it, so it never lands in shell history; run it in your own terminal): `security add-generic-password -a "$USER" -s token-bench-anthropic-api-key -w`. Do not put it in a shell profile, an `.env` file or any Claude Code `settings.json`: from there every Claude Code session would use it.
+- Each benchmark `claude` gets `--settings '{"apiKeyHelper": "security find-generic-password -s token-bench-anthropic-api-key -w"}'`, and its environment loses the inherited credential variables (`ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_BASE_URL`, the Bedrock, Vertex and Foundry switches). Claude Code runs the helper itself, so the key is never in an environment variable, and the commands the agent runs (which inherit Claude Code's environment) cannot read it from there.
+- `token-bench` runs the helper once before the first run and stops if it fails or prints nothing; the output is never printed or stored. `result.json` records the credential source (`environment.credentials`), never the key.
+- `--api-key-helper=CMD` or `$TOKEN_BENCH_API_KEY_HELPER` chooses another helper; `--api-key-helper=none` restores the inherited credentials.
+
+Limits: any process running as your user can still ask the Keychain for the item (the `security` tool is allowed to read items it created), including an agent under test that goes looking for it; the Keychain only keeps the key out of files, environments and other sessions' configuration. `./scripts/check-env.sh` checks that the item exists without reading it.
+
 ### Checking the environment
 
 ```sh

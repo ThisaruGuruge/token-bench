@@ -28,6 +28,10 @@ type (
 		Env []string
 		// MaxBudgetUSD caps one Claude session's spend; zero selects the default.
 		MaxBudgetUSD float64
+		// APIKeyHelper is a shell command printing the API key, made Claude
+		// Code's only credential source; empty keeps inherited credentials.
+		// Claude harness only.
+		APIKeyHelper string
 		// Status receives best-effort formatted activity updates. The caller owns
 		// the capacity-one channel and must not close it while a harness is running.
 		Status chan string
@@ -63,6 +67,7 @@ func NewClaude(config Config) Harness {
 	return claude.New(claude.Config{
 		SkillsDir: config.SkillsDir, Status: config.Status, Model: config.Model, PluginDir: config.PluginDir,
 		ExtraSystemPrompt: config.ExtraSystemPrompt, Env: config.Env, MaxBudgetUSD: config.MaxBudgetUSD,
+		APIKeyHelper: config.APIKeyHelper,
 	})
 }
 

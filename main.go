@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -27,7 +28,7 @@ const hiddenValidationFailure = "hidden validation failed"
 
 const usage = `usage: token-bench <task> <language> <harness> [--n-runs=N] [--target=DIR] [--skills=DIR] [--phoenix-endpoint=URL]
                    [--model=NAME] [--arm=LABEL] [--max-budget-usd=N] [--arms-dir=DIR] [--skills-repo=DIR]
-                   [--run-number=N] [--requested-runs=N]
+                   [--run-number=N] [--requested-runs=N] [--api-key-helper=CMD|none]
 
 Implementations:
   task:      checkout-sync, claim-check, content-based-router, content-enricher, dead-letter-channel, multi-consumer, scatter-gather
@@ -43,6 +44,10 @@ Notes:
   --skills-repo is the ballerina-platform/skills checkout arms read from ($TOKEN_BENCH_SKILLS_REPO, default
     ~/Projects/Ballerina/cli-improvements/benchmark/reference/ballerina-skills).
   --max-budget-usd caps one Claude session's spend (default 20) and is recorded in result.json.
+  --api-key-helper is a shell command printing the benchmark API key, made Claude Code's only credential source
+    (its apiKeyHelper setting; inherited ANTHROPIC_API_KEY and other credentials are removed from its environment).
+    Default: the macOS Keychain item token-bench-anthropic-api-key ($TOKEN_BENCH_API_KEY_HELPER overrides).
+    "none" uses the inherited credentials instead. The helper is checked before the first run.
   --run-number and --requested-runs label the first run's number and the cell's run count (used by the matrix runner).
   --phoenix-endpoint enables tracing to a locally hosted Arize Phoenix OTLP/HTTP endpoint.
 `
@@ -62,6 +67,50 @@ type options struct {
 	skillsRepo      string
 	runNumber       int
 	requestedRuns   int
+	apiKeyHelper    string
+}
+
+// defaultAPIKeyHelper reads the benchmark key from the macOS Keychain. Store it
+// with: security add-generic-password -a "$USER" -s token-bench-anthropic-api-key -w
+const defaultAPIKeyHelper = "security find-generic-password -s token-bench-anthropic-api-key -w"
+
+// resolveAPIKeyHelper returns the helper command for the claude harness: the
+// flag, else $TOKEN_BENCH_API_KEY_HELPER, else the Keychain default; "none"
+// disables it (inherited credentials).
+func resolveAPIKeyHelper(flag string) string {
+	helper := flag
+	if helper == "" {
+		helper = os.Getenv("TOKEN_BENCH_API_KEY_HELPER")
+	}
+	if helper == "" {
+		helper = defaultAPIKeyHelper
+	}
+	if helper == "none" {
+		return ""
+	}
+	return helper
+}
+
+// checkAPIKeyHelper runs the helper once and fails unless it prints a value.
+// The output is the secret: it is only measured, never printed or stored.
+func checkAPIKeyHelper(helper string) error {
+	command := exec.Command("sh", "-c", helper)
+	var stderr strings.Builder
+	command.Stderr = &stderr
+	output, err := command.Output()
+	empty := len(strings.TrimSpace(string(output))) == 0
+	clear(output)
+	if err != nil || empty {
+		reason := strings.TrimSpace(stderr.String())
+		if err != nil && reason == "" {
+			reason = err.Error()
+		}
+		if reason == "" {
+			reason = "it printed nothing"
+		}
+		return fmt.Errorf("API key helper %q failed: %s\nstore the benchmark key with: security add-generic-password -a \"$USER\" -s token-bench-anthropic-api-key -w\n(or pass --api-key-helper=none to use the inherited credentials)", helper, reason)
+	}
+	return nil
 }
 
 type runResult = benchresult.Result
@@ -127,6 +176,15 @@ func run(arguments []string) (exitCode int) {
 	}
 	statusUpdates := make(chan string, 1)
 	harnessConfig := harness.Config{SkillsDir: configuration.skillsDir, Status: statusUpdates, Model: configuration.model, MaxBudgetUSD: configuration.maxBudgetUSD}
+	if configuration.harness == "claude" {
+		harnessConfig.APIKeyHelper = resolveAPIKeyHelper(configuration.apiKeyHelper)
+		if harnessConfig.APIKeyHelper != "" {
+			if err := checkAPIKeyHelper(harnessConfig.APIKeyHelper); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return 2
+			}
+		}
+	}
 	if _, err := selectHarness(configuration.harness, harnessConfig); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
@@ -568,6 +626,12 @@ func parseOptions(arguments []string) (options, error) {
 				return options{}, errors.New("--max-budget-usd must be a positive number")
 			}
 			parsed.maxBudgetUSD = budget
+		case isFlag(argument, "--api-key-helper"):
+			value, err := flagValue(arguments, &index, "--api-key-helper")
+			if err != nil {
+				return options{}, err
+			}
+			parsed.apiKeyHelper = value
 		case isFlag(argument, "--arms-dir"):
 			value, err := flagValue(arguments, &index, "--arms-dir")
 			if err != nil {

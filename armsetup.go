@@ -109,6 +109,10 @@ func (s *armSetup) environment(configuration options, config harness.Config) *be
 		ClaudeVersion:   s.versions.Claude,
 		DiscoverVisible: s.versions.Discover != "not installed",
 		MaxBudgetUSD:    budget,
+		Credentials:     "inherited",
+	}
+	if config.APIKeyHelper != "" {
+		environment.Credentials = "apiKeyHelper: " + config.APIKeyHelper
 	}
 	if s.arm != nil {
 		environment.DiscoverVisible = s.arm.DiscoverVisible && environment.DiscoverVisible

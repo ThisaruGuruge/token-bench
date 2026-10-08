@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,6 +50,35 @@ type Config struct {
 	Env []string
 	// MaxBudgetUSD is passed as --max-budget-usd; zero selects DefaultMaxBudgetUSD.
 	MaxBudgetUSD float64
+	// APIKeyHelper, when set, is the only credential source: a shell command
+	// printing the API key, passed as the apiKeyHelper setting. Claude Code
+	// runs it itself, so the key is never in the environment of Claude Code or
+	// of the commands the agent runs, and inherited credentials are removed.
+	APIKeyHelper string
+}
+
+// credentialVariables select or carry model API credentials; with an
+// APIKeyHelper they are removed from the inherited environment so no other
+// credential (such as the user's own ANTHROPIC_API_KEY) can be used.
+var credentialVariables = []string{
+	"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_OAUTH_TOKEN",
+	"CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CODE_USE_FOUNDRY",
+	"AWS_BEARER_TOKEN_BEDROCK", "ANTHROPIC_FOUNDRY_API_KEY",
+}
+
+// processEnvironment is the environment of the claude process: the inherited
+// one (without credential variables when an APIKeyHelper is set), then the
+// harness' own settings and the configured entries.
+func (c *claude) processEnvironment(inherited []string) []string {
+	var environment []string
+	for _, entry := range inherited {
+		name, _, _ := strings.Cut(entry, "=")
+		if c.config.APIKeyHelper != "" && slices.Contains(credentialVariables, name) {
+			continue
+		}
+		environment = append(environment, entry)
+	}
+	return append(append(environment, "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1"), c.config.Env...)
 }
 
 // TokenCount contains usage dimensions reported by Claude Code.
@@ -200,7 +230,7 @@ func (c *claude) startProcess(executable, workingDir string, benchmark tracing.B
 
 	command := exec.Command(executable, c.startArguments()...)
 	command.Dir = workingDir
-	command.Env = append(append(os.Environ(), "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1"), c.config.Env...)
+	command.Env = c.processEnvironment(os.Environ())
 	command.Stderr = stderrFile
 	stdin, err := command.StdinPipe()
 	if err != nil {
@@ -384,6 +414,10 @@ func (c *claude) startArguments() []string {
 	}
 	if c.config.PluginDir != "" {
 		arguments = append(arguments, "--plugin-dir", c.config.PluginDir)
+	}
+	if c.config.APIKeyHelper != "" {
+		settings, _ := json.Marshal(map[string]string{"apiKeyHelper": c.config.APIKeyHelper})
+		arguments = append(arguments, "--settings", string(settings))
 	}
 	return arguments
 }

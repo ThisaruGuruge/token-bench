@@ -297,3 +297,40 @@ func TestMatrixScenarioListMatchesTheRunner(t *testing.T) {
 		t.Errorf("runner has 7 scenarios, matrix lists %d", len(matrix.KnownScenarios))
 	}
 }
+
+func TestResolveAPIKeyHelper(t *testing.T) {
+	t.Setenv("TOKEN_BENCH_API_KEY_HELPER", "")
+	if got := resolveAPIKeyHelper(""); got != defaultAPIKeyHelper {
+		t.Errorf("default = %q", got)
+	}
+	if got := resolveAPIKeyHelper("none"); got != "" {
+		t.Errorf("none = %q", got)
+	}
+	t.Setenv("TOKEN_BENCH_API_KEY_HELPER", "cat /secure/key")
+	if got := resolveAPIKeyHelper(""); got != "cat /secure/key" {
+		t.Errorf("env = %q", got)
+	}
+	if got := resolveAPIKeyHelper("pass show bench"); got != "pass show bench" {
+		t.Errorf("flag = %q", got)
+	}
+}
+
+func TestCheckAPIKeyHelperFailsClosedAndNeverEchoesTheKey(t *testing.T) {
+	if err := checkAPIKeyHelper("printf sk-ant-secret-value"); err != nil {
+		t.Fatalf("a helper printing a key must pass: %v", err)
+	}
+	for _, helper := range []string{"true", "exit 44", "printf '  \n'"} {
+		err := checkAPIKeyHelper(helper)
+		if err == nil {
+			t.Errorf("%q must fail", helper)
+		}
+	}
+	secret := filepath.Join(t.TempDir(), "key")
+	if err := os.WriteFile(secret, []byte("sk-ant-secret-value"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := checkAPIKeyHelper("cat '" + secret + "'; exit 3")
+	if err == nil || strings.Contains(err.Error(), "sk-ant-secret-value") {
+		t.Errorf("a failing helper must fail without echoing its output: %v", err)
+	}
+}

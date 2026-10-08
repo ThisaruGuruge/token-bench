@@ -105,6 +105,16 @@ else
   fail "patch not found (arm D)"
 fi
 
+# Benchmark API key: token-bench's default credential source is this Keychain
+# item. Only its presence is checked; the secret is never read here.
+if [ -n "${TOKEN_BENCH_API_KEY_HELPER:-}" ]; then
+  ok "API key helper overridden by TOKEN_BENCH_API_KEY_HELPER (not checked here; token-bench checks it before the first run)"
+elif command -v security >/dev/null 2>&1 && security find-generic-password -s token-bench-anthropic-api-key >/dev/null 2>&1; then
+  ok "benchmark API key stored in the Keychain (token-bench-anthropic-api-key)"
+else
+  fail "benchmark API key not in the Keychain; store it with: security add-generic-password -a \"\$USER\" -s token-bench-anthropic-api-key -w"
+fi
+
 # skills repository
 if [[ -d "$SKILLS_REPO" ]]; then
   commit=""
