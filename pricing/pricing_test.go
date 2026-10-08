@@ -38,3 +38,25 @@ func TestUnknownModelHasNoCost(t *testing.T) {
 		t.Fatal("unknown model should have no price")
 	}
 }
+
+func TestUsageCostPricesEachCacheTTL(t *testing.T) {
+	usage := Usage{Input: 1_000_000, Output: 500_000, CacheRead: 2_000_000, CacheWrite5m: 100_000, CacheWrite1h: 1_000_000}
+	got, ok := UsageCost("claude-sonnet-5-5", usage)
+	if !ok {
+		t.Fatal("model not found")
+	}
+	// 2 + 5 + 0.4 + 0.1M*2.5 + 1M*4 = 11.65
+	if math.Abs(got-11.65) > 1e-9 {
+		t.Fatalf("cost = %v, want 11.65", got)
+	}
+}
+
+func TestAliasesMatchCurrentModels(t *testing.T) {
+	for alias, model := range map[string]string{
+		"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "haiku": "claude-haiku-5-5", "fable": "claude-fable-5-1",
+	} {
+		if Table[alias] != Table[model] {
+			t.Errorf("alias %q priced %+v; %s is %+v", alias, Table[alias], model, Table[model])
+		}
+	}
+}
