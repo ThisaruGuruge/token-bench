@@ -58,18 +58,27 @@ func TestAnalyzeEmptyLog(t *testing.T) {
 
 func TestBashFamilies(t *testing.T) {
 	tests := map[string][]string{
-		"bal discover ballerinax/x":           {FamilyBalDiscover},
-		"bal --help":                          {FamilyBalOther},
-		"bal new foo":                         {FamilyBalOther},
-		"bal pull a/b; bal run":               {FamilyBalPull, FamilyBalRun},
-		"bal search x | head && bal search y": {FamilyBalSearch},
-		"cd x && bal build":                   {FamilyBalBuild},
-		"ls; cat file":                        nil,
-		"echo bal discover":                   nil,
-		"FOO=1 bal run --offline":             {FamilyBalRun},
-		"bal -v build":                        {FamilyBalBuild},
-		"(cd a && bal run) 2>&1":              {FamilyBalRun},
-		"bal\ndiscover":                       {FamilyBalOther},
+		"bal discover ballerinax/x":              {FamilyBalDiscover},
+		"bal --help":                             {FamilyBalOther},
+		"bal new foo":                            {FamilyBalOther},
+		"bal pull a/b; bal run":                  {FamilyBalPull, FamilyBalRun},
+		"bal search x | head && bal search y":    {FamilyBalSearch},
+		"cd x && bal build":                      {FamilyBalBuild},
+		"ls; cat file":                           nil,
+		"echo bal discover":                      nil,
+		"FOO=1 bal run --offline":                {FamilyBalRun},
+		"bal -v build":                           {FamilyBalBuild},
+		"(cd a && bal run) 2>&1":                 {FamilyBalRun},
+		"bal\ndiscover":                          {FamilyBalOther},
+		"bash -c 'bal discover ballerinax/x'":    {FamilyBalDiscover},
+		`sh -lc "cd a && bal build"`:             {FamilyBalBuild},
+		"timeout 120 bal discover a/b":           {FamilyBalDiscover},
+		"timeout --signal=KILL 60s bal pull a/b": {FamilyBalPull},
+		"env -i FOO=1 bal search x":              {FamilyBalSearch},
+		"time bal build":                         {FamilyBalBuild},
+		"bash script.sh":                         nil,
+		"echo 'bal discover'":                    nil,
+		"'bal' 'discover' a/b":                   {FamilyBalDiscover},
 	}
 	for command, want := range tests {
 		if got := bashFamilies(command); !reflect.DeepEqual(got, want) {
@@ -81,5 +90,27 @@ func TestBashFamilies(t *testing.T) {
 func TestAnalyzeFileMissing(t *testing.T) {
 	if _, err := AnalyzeFile("/nonexistent/claude-stream.jsonl"); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+const usageLog = `{"type":"assistant","message":{"id":"a1","model":"claude-sonnet-5-5","content":[{"type":"text"}],"usage":{"input_tokens":5,"output_tokens":1,"cache_read_input_tokens":100,"cache_creation_input_tokens":30,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":30}}}}
+{"type":"assistant","message":{"id":"a1","model":"claude-sonnet-5-5","content":[{"type":"tool_use","id":"t1","name":"Bash","input":{}}],"usage":{"input_tokens":5,"output_tokens":40,"cache_read_input_tokens":100,"cache_creation_input_tokens":30,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":30}}}}
+{"type":"assistant","message":{"id":"a2","model":"claude-sonnet-5-5","content":[],"usage":{"input_tokens":2,"output_tokens":10,"cache_read_input_tokens":130,"cache_creation_input_tokens":12,"cache_creation":{"ephemeral_5m_input_tokens":2,"ephemeral_1h_input_tokens":10}}}}
+{"type":"assistant","parent_tool_use_id":"t1","message":{"id":"s1","model":"claude-haiku-5-5","content":[],"usage":{"input_tokens":7,"output_tokens":3,"cache_read_input_tokens":0,"cache_creation_input_tokens":9}}}
+{"type":"assistant","message":{"id":"x1","model":"<synthetic>","content":[],"usage":{"input_tokens":0,"output_tokens":0}}}
+`
+
+func TestAnalyzeModelUsage(t *testing.T) {
+	summary, err := Analyze(strings.NewReader(usageLog))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]ModelUsage{
+		// a1 counted once (largest snapshot) plus a2.
+		"claude-sonnet-5-5": {Messages: 2, Input: 7, Output: 50, CacheRead: 230, CacheWrite5m: 2, CacheWrite1h: 40},
+		"claude-haiku-5-5":  {Messages: 1, Input: 7, Output: 3, CacheWriteUnsplit: 9},
+	}
+	if !reflect.DeepEqual(summary.Models, want) {
+		t.Errorf("models = %+v, want %+v", summary.Models, want)
 	}
 }
