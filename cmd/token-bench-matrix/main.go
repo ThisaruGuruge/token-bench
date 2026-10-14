@@ -130,6 +130,9 @@ func buildPlan(c config, set map[string]bool, armsDir string) (matrix.Plan, erro
 		if phase.Model != "" {
 			plan.Model = phase.Model
 		}
+		if phase.MaxBudgetUSD > 0 && !set["max-budget-usd"] {
+			plan.MaxBudgetUSD = phase.MaxBudgetUSD
+		}
 	}
 	if set["arms"] {
 		plan.Arms = split(c.arms)

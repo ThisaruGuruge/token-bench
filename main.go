@@ -234,7 +234,7 @@ func run(arguments []string) (exitCode int) {
 			return 1
 		}
 		runHarnessConfig := harnessConfig
-		runHarnessConfig.Env = runEnv.envEntries()
+		runEnv.configure(&runHarnessConfig, setup.arm)
 		harnessConstructor, err := selectHarness(configuration.harness, runHarnessConfig)
 		if err != nil {
 			_ = runEnv.cleanup()
@@ -255,6 +255,9 @@ func run(arguments []string) (exitCode int) {
 			Environment:    setup.environment(configuration, harnessConfig),
 		}
 		current = executeRun(current, directory, taskDefinition, languageImplementation, harnessConstructor, traceProvider)
+		if err := runEnv.collect(&current, directory, taskDefinition, setup.arm); err != nil {
+			current.Error = joinErrors(current.Error, err.Error())
+		}
 		if err := runEnv.cleanup(); err != nil {
 			current.Error = joinErrors(current.Error, err.Error())
 		}

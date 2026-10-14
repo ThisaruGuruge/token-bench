@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 
 	"token-bench/arm"
+	"token-bench/calllog"
 	"token-bench/harness"
 	benchresult "token-bench/result"
+	"token-bench/task"
 )
 
 // armSetup holds what is resolved once per invocation: the selected arm (nil
@@ -19,6 +21,10 @@ type armSetup struct {
 	realBal  string
 	versions arm.Versions
 	harness  string
+	// target is the results directory; container runs keep their private
+	// directories under it so the container runtime can mount them.
+	target    string
+	container *benchresult.Container
 }
 
 // armRun is the per-run side of an arm; nil-safe so callers need no checks.
@@ -35,7 +41,7 @@ func (r armRun) cleanup() error { return r.env.Cleanup() }
 
 // newArmSetup resolves --arm against the arm definitions and captures versions.
 func newArmSetup(configuration options, target string) (*armSetup, error) {
-	setup := &armSetup{harness: configuration.harness}
+	setup := &armSetup{harness: configuration.harness, target: target}
 	if configuration.harness == "claude" {
 		setup.realBal, _ = arm.FindRealBal(os.Getenv("PATH"))
 		claudePath, _ := exec.LookPath("claude")
@@ -58,6 +64,14 @@ func newArmSetup(configuration options, target string) (*armSetup, error) {
 	config, err := arm.Load(dir, configuration.arm)
 	if err != nil {
 		return nil, err
+	}
+	if config.Container != nil {
+		image, err := arm.InspectImage(arm.ExecRunner, config.Container.Image)
+		if err != nil {
+			return nil, err
+		}
+		setup.container = &benchresult.Container{Image: config.Container.Image, ImageID: image.ID, Labels: image.Labels}
+		setup.versions = arm.CaptureContainerVersions(arm.ExecRunner, config.Container.Image)
 	}
 	if !config.DiscoverVisible && setup.realBal == "" {
 		return nil, errors.New("arm hides bal discover but bal was not found on PATH to forward to")
@@ -90,8 +104,80 @@ func (s *armSetup) prepareRun() (armRun, error) {
 	if s.arm == nil {
 		return armRun{}, nil
 	}
-	env, err := arm.PrepareRun(*s.arm, s.realBal, os.Getenv("PATH"))
+	env, err := arm.PrepareRunIn(*s.arm, s.realBal, os.Getenv("PATH"), filepath.Join(s.target, privateRunsDir))
 	return armRun{env: env}, err
+}
+
+// privateRunsDir holds container runs' private directories (cache, call
+// log) under the results directory; dot-directories are skipped by reports.
+const privateRunsDir = ".token-bench-private"
+
+// configure points one run's harness configuration at the arm's run environment.
+func (r armRun) configure(config *harness.Config, resolved *arm.Resolved) {
+	if resolved != nil {
+		config.DisallowedTools = resolved.DisallowedTools
+	}
+	if r.env == nil || r.env.Container == nil {
+		config.Env = r.envEntries()
+		return
+	}
+	config.Env = nil
+	config.Container = &harness.Container{
+		Image:   r.env.Container.Image,
+		Mounts:  []string{r.env.Container.BenchDir + ":" + arm.BenchMount},
+		Env:     r.env.Env,
+		WorkDir: arm.WorkMount,
+	}
+}
+
+// collect copies the run's call log into the result directory and records
+// the discover summary, live fetches and bypasses. It runs before cleanup.
+func (r armRun) collect(result *runResult, directory string, definition task.Task, resolved *arm.Resolved) error {
+	if r.env == nil || r.env.Container == nil {
+		return nil
+	}
+	var summary calllog.Summary
+	if r.env.CallLogDir != "" {
+		if err := copyDir(r.env.CallLogDir, filepath.Join(directory, "calls")); err != nil {
+			return fmt.Errorf("copy call log: %w", err)
+		}
+		calls, err := calllog.Read(filepath.Join(r.env.CallLogDir, arm.CallLogName))
+		if err != nil {
+			return fmt.Errorf("read call log: %w", err)
+		}
+		summary = calllog.Summarize(calls, definition.FirstCommands[resolved.Grammar])
+	}
+	fetches, err := r.env.LiveFetches(resolved.CacheSeedDir)
+	if err != nil {
+		return fmt.Errorf("count live fetches: %w", err)
+	}
+	summary.LiveFetches = fetches
+	if result.ToolUsage != nil {
+		summary.Bypasses = calllog.Bypasses(result.ToolUsage.Probes)
+	}
+	result.Discover = &summary
+	return nil
+}
+
+func copyDir(source, destination string) error {
+	return filepath.WalkDir(source, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(destination, relative)
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, content, 0o644)
+	})
 }
 
 // environment is the record stored in result.json; nil for non-Claude harnesses.
@@ -116,7 +202,15 @@ func (s *armSetup) environment(configuration options, config harness.Config) *be
 	}
 	if s.arm != nil {
 		environment.DiscoverVisible = s.arm.DiscoverVisible && environment.DiscoverVisible
-		environment.ColdDiscoverCache = true
+		environment.ColdDiscoverCache = s.arm.CacheSeedDir == ""
+		environment.Container = s.container
+		environment.DisallowedTools = s.arm.DisallowedTools
+		if s.arm.CacheSeedDir != "" {
+			environment.CacheSeed = &benchresult.CacheSeed{Dir: s.arm.CacheSeedDir, Hash: s.arm.CacheSeedHash, Files: s.arm.CacheSeedFiles}
+		}
+		if s.container != nil && config.APIKeyHelper != "" {
+			environment.Credentials = "host apiKeyHelper " + config.APIKeyHelper + " -> container stdin -> tmpfs, in-container apiKeyHelper"
+		}
 		environment.SkillsRepoCommit = s.arm.SkillsRepoActual
 		environment.SkillsHash = s.arm.SkillsHash
 		environment.ExtraSystemPrompt = s.arm.ExtraSystemPrompt
