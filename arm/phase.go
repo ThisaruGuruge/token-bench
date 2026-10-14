@@ -16,6 +16,8 @@ type Phase struct {
 	Scenarios   []string `json:"scenarios"`
 	Runs        int      `json:"runs"`
 	Model       string   `json:"model"`
+	// MaxBudgetUSD is the per-run cap; zero keeps the runner's default.
+	MaxBudgetUSD float64 `json:"maxBudgetUsd,omitempty"`
 }
 
 // LoadPhases reads arms/phases.json.

@@ -42,6 +42,26 @@ type Config struct {
 	// SkillsRepoCommit is the skills repository commit the arm was designed
 	// against; a different checkout produces a warning, not an error.
 	SkillsRepoCommit string `json:"skillsRepoCommit,omitempty"`
+	// Container runs the agent in a fresh container of this image per run
+	// instead of on the host.
+	Container *Container `json:"container,omitempty"`
+	// CallLog logs every `bal` call through the image's bal-calllog wrapper
+	// and summarizes it into the result. Container arms only.
+	CallLog bool `json:"callLog,omitempty"`
+	// CacheSeed is a pre-warmed discover cache directory (the bal-discover
+	// directory itself), copied into each run's private cache. $VAR and a
+	// leading ~ are expanded; a relative path is relative to the arms directory.
+	CacheSeed string `json:"cacheSeed,omitempty"`
+	// DisallowedTools are denied to the agent in addition to the harness default.
+	DisallowedTools []string `json:"disallowedTools,omitempty"`
+	// Grammar names the discover grammar the arm's build speaks ("A" or "B"),
+	// selecting a question task's on-target first commands.
+	Grammar string `json:"grammar,omitempty"`
+}
+
+// Container is the image a container arm runs in.
+type Container struct {
+	Image string `json:"image"`
 }
 
 // Validate checks the definition's internal consistency.
@@ -57,6 +77,20 @@ func (c Config) Validate() error {
 	}
 	if c.SkillsPatch != "" && c.Skills == "" {
 		return fmt.Errorf("arm %s: skillsPatch requires skills", c.ID)
+	}
+	if c.Container != nil {
+		if c.Container.Image == "" {
+			return fmt.Errorf("arm %s: container.image is required", c.ID)
+		}
+		if c.UsesSkillsRepo() {
+			return fmt.Errorf("arm %s: a container arm cannot load skills or plugins from the host", c.ID)
+		}
+		if !c.DiscoverVisible {
+			return fmt.Errorf("arm %s: a container arm's image decides what is installed; discoverVisible must be true", c.ID)
+		}
+	}
+	if (c.CallLog || c.CacheSeed != "") && c.Container == nil {
+		return fmt.Errorf("arm %s: callLog and cacheSeed need a container arm", c.ID)
 	}
 	return nil
 }
@@ -127,7 +161,12 @@ type Resolved struct {
 	SkillsRepoActual string
 	// SkillsHash is a content hash of the exact tree the agent receives.
 	SkillsHash string
-	Warnings   []string
+	// CacheSeedDir is the absolute seed directory; CacheSeedHash hashes it
+	// with its latest-version timestamps zeroed, so a re-stamp is not a change.
+	CacheSeedDir   string
+	CacheSeedHash  string
+	CacheSeedFiles int
+	Warnings       []string
 }
 
 // ResolveOptions locate the inputs of an arm.
@@ -150,6 +189,17 @@ func Resolve(config Config, options ResolveOptions) (Resolved, error) {
 			return Resolved{}, fmt.Errorf("arm %s: read system prompt: %w", config.ID, err)
 		}
 		resolved.ExtraSystemPrompt = strings.TrimSpace(string(content))
+	}
+	if config.CacheSeed != "" {
+		seed := expandPath(config.CacheSeed, options.ArmsDir)
+		dir, err := absoluteDir(seed)
+		if err != nil {
+			return Resolved{}, fmt.Errorf("arm %s: cache seed: %w", config.ID, err)
+		}
+		resolved.CacheSeedDir = dir
+		if resolved.CacheSeedHash, resolved.CacheSeedFiles, err = HashSeed(dir); err != nil {
+			return Resolved{}, fmt.Errorf("arm %s: cache seed: %w", config.ID, err)
+		}
 	}
 	if !config.UsesSkillsRepo() {
 		return resolved, nil
@@ -183,6 +233,19 @@ func Resolve(config Config, options ResolveOptions) (Resolved, error) {
 		return Resolved{}, fmt.Errorf("arm %s: %w", config.ID, err)
 	}
 	return resolved, nil
+}
+
+// expandPath expands $VARS and a leading ~, and resolves a relative path against base.
+func expandPath(path, base string) string {
+	expanded := os.ExpandEnv(path)
+	if rest, found := strings.CutPrefix(expanded, "~/"); found {
+		home, _ := os.UserHomeDir()
+		expanded = filepath.Join(home, rest)
+	}
+	if !filepath.IsAbs(expanded) {
+		expanded = filepath.Join(base, expanded)
+	}
+	return expanded
 }
 
 func orUnknown(value string) string {
