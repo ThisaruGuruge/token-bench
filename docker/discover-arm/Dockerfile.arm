@@ -1,0 +1,24 @@
+# One container arm of the grammar benchmark: the base image plus one grammar's
+# bal discover, installed from that branch's bala into the image's own
+# Ballerina home (never the host's).
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+ARG ARM
+ARG BRANCH
+ARG COMMIT
+ARG BALA_SHA256
+ARG DISCOVER_VERSION=0.1.0
+
+COPY --chown=node:node tool_discover.bala /tmp/tool_discover.bala
+RUN bal push --repository=local /tmp/tool_discover.bala \
+ && bal tool pull "discover:${DISCOVER_VERSION}" --repository=local \
+ && rm /tmp/tool_discover.bala \
+ && test "$(bal tool list | grep -c '^|discover ')" = "1" \
+ && bal discover --help > /dev/null
+
+LABEL org.token-bench.arm="${ARM}" \
+      org.token-bench.discover-branch="${BRANCH}" \
+      org.token-bench.discover-commit="${COMMIT}" \
+      org.token-bench.bala-sha256="${BALA_SHA256}" \
+      org.token-bench.discover-version="${DISCOVER_VERSION}"

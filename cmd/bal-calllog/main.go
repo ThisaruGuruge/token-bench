@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -27,6 +28,9 @@ import (
 
 const (
 	defaultRealBal = "/usr/lib/ballerina/bin/bal"
+	// realBalFile names the real launcher when $TOKEN_BENCH_REAL_BAL is unset;
+	// the image writes it where the Ballerina package installed bal.
+	realBalFile    = "/etc/token-bench-real-bal"
 	outputsDirName = "outputs"
 )
 
@@ -36,6 +40,11 @@ func main() {
 
 func run(arguments []string) int {
 	realBal := os.Getenv("TOKEN_BENCH_REAL_BAL")
+	if realBal == "" {
+		if content, err := os.ReadFile(realBalFile); err == nil {
+			realBal = strings.TrimSpace(string(content))
+		}
+	}
 	if realBal == "" {
 		realBal = defaultRealBal
 	}
