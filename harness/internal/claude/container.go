@@ -17,6 +17,8 @@ import (
 // a command line or the environment of the commands the agent runs.
 type Container struct {
 	Image string
+	// Platform (os/arch) is passed as --platform when set.
+	Platform string
 	// Mounts are host:container bind mounts; the working directory is mounted
 	// at WorkDir in addition.
 	Mounts []string
@@ -52,6 +54,9 @@ func (c Container) dockerArguments(name, hostWorkDir string) []string {
 		"--tmpfs", containerSecretDir + ":rw,noexec,nosuid,size=64k,mode=0700,uid=" + containerUserID + ",gid=" + containerUserID,
 		"-v", hostWorkDir + ":" + c.WorkDir,
 		"-w", c.WorkDir,
+	}
+	if c.Platform != "" {
+		arguments = append(arguments, "--platform", c.Platform)
 	}
 	for _, mount := range c.Mounts {
 		arguments = append(arguments, "-v", mount)

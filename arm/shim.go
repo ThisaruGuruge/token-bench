@@ -33,7 +33,8 @@ type RunEnv struct {
 
 // ContainerRun is the per-run side of a container arm.
 type ContainerRun struct {
-	Image string
+	Image    string
+	Platform string
 	// BenchDir is mounted at BenchMount; it holds the cache and the call log.
 	BenchDir string
 }
@@ -289,18 +290,22 @@ func CaptureVersions(run Runner, realBal, claude string) Versions {
 
 // Image is what `docker image inspect` reports about a container arm's image.
 type Image struct {
-	ID     string
-	Labels map[string]string
+	ID string
+	// Platform is the image's os/architecture, passed to docker run so a
+	// DOCKER_DEFAULT_PLATFORM in the environment cannot pick another one.
+	Platform string
+	Labels   map[string]string
 }
 
 // InspectImage reads the image's id and its org.token-bench.* labels; a
 // missing image is an error (build it first).
 func InspectImage(run Runner, image string) (Image, error) {
-	output, err := run("docker", "image", "inspect", "--format", "{{.Id}}\t{{json .Config.Labels}}", image)
+	output, err := run("docker", "image", "inspect", "--format", "{{.Id}}\t{{.Os}}/{{.Architecture}}\t{{json .Config.Labels}}", image)
 	if err != nil {
 		return Image{}, fmt.Errorf("inspect image %s (build it with scripts/grammar/build-images.sh): %v: %s", image, err, output)
 	}
-	id, labelsJSON, _ := strings.Cut(output, "\t")
+	id, rest, _ := strings.Cut(output, "\t")
+	platform, labelsJSON, _ := strings.Cut(rest, "\t")
 	var labels map[string]string
 	_ = json.Unmarshal([]byte(labelsJSON), &labels)
 	kept := map[string]string{}
@@ -309,14 +314,14 @@ func InspectImage(run Runner, image string) (Image, error) {
 			kept[key] = value
 		}
 	}
-	return Image{ID: strings.TrimSpace(id), Labels: kept}, nil
+	return Image{ID: strings.TrimSpace(id), Platform: strings.TrimSpace(platform), Labels: kept}, nil
 }
 
 // CaptureContainerVersions records the versions inside a container arm's
 // image, the same three CaptureVersions reads on the host.
-func CaptureContainerVersions(run Runner, image string) Versions {
+func CaptureContainerVersions(run Runner, image, platform string) Versions {
 	versions := Versions{Bal: "unavailable", Discover: "not installed", Claude: "unavailable"}
-	output, err := run("docker", "run", "--rm", "--entrypoint", "sh", image, "-c",
+	output, err := run("docker", "run", "--rm", "--platform", platform, "--entrypoint", "sh", image, "-c",
 		`bal version 2>/dev/null | head -n 1; echo '---'; bal tool list 2>/dev/null; echo '---'; claude --version 2>/dev/null`)
 	if err != nil {
 		return versions

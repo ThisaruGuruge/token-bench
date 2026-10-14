@@ -70,8 +70,8 @@ func newArmSetup(configuration options, target string) (*armSetup, error) {
 		if err != nil {
 			return nil, err
 		}
-		setup.container = &benchresult.Container{Image: config.Container.Image, ImageID: image.ID, Labels: image.Labels}
-		setup.versions = arm.CaptureContainerVersions(arm.ExecRunner, config.Container.Image)
+		setup.container = &benchresult.Container{Image: config.Container.Image, ImageID: image.ID, Platform: image.Platform, Labels: image.Labels}
+		setup.versions = arm.CaptureContainerVersions(arm.ExecRunner, config.Container.Image, image.Platform)
 	}
 	if !config.DiscoverVisible && setup.realBal == "" {
 		return nil, errors.New("arm hides bal discover but bal was not found on PATH to forward to")
@@ -108,12 +108,20 @@ func (s *armSetup) prepareRun() (armRun, error) {
 	return armRun{env: env}, err
 }
 
+// platform is the container arm image's os/architecture, or empty.
+func (s *armSetup) platform() string {
+	if s.container == nil {
+		return ""
+	}
+	return s.container.Platform
+}
+
 // privateRunsDir holds container runs' private directories (cache, call
 // log) under the results directory; dot-directories are skipped by reports.
 const privateRunsDir = ".token-bench-private"
 
 // configure points one run's harness configuration at the arm's run environment.
-func (r armRun) configure(config *harness.Config, resolved *arm.Resolved) {
+func (r armRun) configure(config *harness.Config, resolved *arm.Resolved, platform string) {
 	if resolved != nil {
 		config.DisallowedTools = resolved.DisallowedTools
 	}
@@ -123,10 +131,11 @@ func (r armRun) configure(config *harness.Config, resolved *arm.Resolved) {
 	}
 	config.Env = nil
 	config.Container = &harness.Container{
-		Image:   r.env.Container.Image,
-		Mounts:  []string{r.env.Container.BenchDir + ":" + arm.BenchMount},
-		Env:     r.env.Env,
-		WorkDir: arm.WorkMount,
+		Image:    r.env.Container.Image,
+		Platform: platform,
+		Mounts:   []string{r.env.Container.BenchDir + ":" + arm.BenchMount},
+		Env:      r.env.Env,
+		WorkDir:  arm.WorkMount,
 	}
 }
 

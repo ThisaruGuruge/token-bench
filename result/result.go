@@ -75,8 +75,9 @@ type Environment struct {
 
 // Container identifies the image a run's agent ran in.
 type Container struct {
-	Image   string `json:"image"`
-	ImageID string `json:"imageId,omitempty"`
+	Image    string `json:"image"`
+	ImageID  string `json:"imageId,omitempty"`
+	Platform string `json:"platform,omitempty"`
 	// Labels are the image's org.token-bench.* labels (branch commit, bala hash, versions).
 	Labels map[string]string `json:"labels,omitempty"`
 }

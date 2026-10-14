@@ -234,7 +234,7 @@ func run(arguments []string) (exitCode int) {
 			return 1
 		}
 		runHarnessConfig := harnessConfig
-		runEnv.configure(&runHarnessConfig, setup.arm)
+		runEnv.configure(&runHarnessConfig, setup.arm, setup.platform())
 		harnessConstructor, err := selectHarness(configuration.harness, runHarnessConfig)
 		if err != nil {
 			_ = runEnv.cleanup()
