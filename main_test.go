@@ -293,8 +293,8 @@ func TestMatrixScenarioListMatchesTheRunner(t *testing.T) {
 			t.Errorf("matrix lists %q but the runner rejects it: %v", name, err)
 		}
 	}
-	if len(matrix.KnownScenarios) != 7 {
-		t.Errorf("runner has 7 scenarios, matrix lists %d", len(matrix.KnownScenarios))
+	if len(matrix.KnownScenarios) != 7+18 {
+		t.Errorf("runner has 25 scenarios (7 service, 18 question), matrix lists %d", len(matrix.KnownScenarios))
 	}
 }
 

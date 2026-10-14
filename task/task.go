@@ -13,11 +13,18 @@ import (
 
 type (
 	Task struct {
-		Name                 string
+		Name string
+		// Kind is KindService (the default: build a service, feedback rounds,
+		// hidden tests) or KindAnswer (single shot: the prompt is sent as is and
+		// Validation reads the answer file the agent wrote).
+		Kind                 string
 		Resources            Resources
 		Endpoints            []Endpoint
 		RequirementsTemplate string
 		InitFn               func(res AllocResources) TaskHandle
+		// FirstCommands lists, per discover grammar, the argv (after `bal
+		// discover`) of an on-target first command; answer tasks only.
+		FirstCommands map[string][][]string
 	}
 	TaskHandle interface {
 		Setup() (func() error, error) // Use Setup for setting things such as mock backend servers
@@ -35,8 +42,19 @@ type (
 	// AllocResources represents static resources that are already allocated by the harness
 	AllocResources struct {
 		Ports []int
+		// WorkDir is the agent's working directory.
+		WorkDir string
 	}
 )
+
+// Task kinds.
+const (
+	KindService = ""
+	KindAnswer  = "answer"
+)
+
+// IsAnswer reports whether the task is a single-shot answer task.
+func (t Task) IsAnswer() bool { return t.Kind == KindAnswer }
 
 // NewClaimCheck initializes the Claim Check task.
 func NewClaimCheck() Task {

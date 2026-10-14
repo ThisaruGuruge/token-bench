@@ -66,6 +66,9 @@ func RenderPrompt(config PromptConfig) (string, error) {
 
 // BenchmarkPromptTemplate returns the complete unrendered prompt for a task.
 func BenchmarkPromptTemplate(definition Task) (string, error) {
+	if definition.IsAnswer() {
+		return definition.RequirementsTemplate, nil
+	}
 	endpoints := make([]renderedEndpoint, 0, len(definition.Endpoints))
 	for _, endpoint := range definition.Endpoints {
 		if endpoint.PortIndex < 0 || endpoint.PortIndex >= definition.Resources.NPorts {
@@ -88,23 +91,8 @@ func BenchmarkPromptTemplate(definition Task) (string, error) {
 
 // BenchmarkPromptTemplateFor returns the current embedded prompt template for a named task.
 func BenchmarkPromptTemplateFor(name string) (string, error) {
-	var definition Task
-	switch name {
-	case "claim-check":
-		definition = NewClaimCheck()
-	case "checkout-sync":
-		definition = NewCheckoutSync()
-	case "content-based-router":
-		definition = NewContentBasedRouter()
-	case "content-enricher":
-		definition = NewContentEnricher()
-	case "dead-letter-channel":
-		definition = NewDeadLetterChannel()
-	case "multi-consumer":
-		definition = NewMultiConsumer()
-	case "scatter-gather":
-		definition = NewScatterGather()
-	default:
+	definition, ok := ByName(name)
+	if !ok {
 		return "", fmt.Errorf("unknown task %q", name)
 	}
 	return BenchmarkPromptTemplate(definition)

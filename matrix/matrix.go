@@ -14,13 +14,11 @@ import (
 	"time"
 
 	"token-bench/result"
+	"token-bench/task"
 )
 
 // KnownScenarios lists the scenarios the runner accepts.
-var KnownScenarios = []string{
-	"checkout-sync", "claim-check", "content-based-router", "content-enricher",
-	"dead-letter-channel", "multi-consumer", "scatter-gather",
-}
+var KnownScenarios = task.Names()
 
 // Plan is a fully specified matrix.
 type Plan struct {

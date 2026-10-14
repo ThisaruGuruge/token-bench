@@ -20,6 +20,7 @@ import (
 	benchresult "token-bench/result"
 	"token-bench/streamlog"
 	"token-bench/task"
+	"token-bench/task/answer"
 	"token-bench/tracing"
 )
 
@@ -31,7 +32,8 @@ const usage = `usage: token-bench <task> <language> <harness> [--n-runs=N] [--ta
                    [--run-number=N] [--requested-runs=N] [--api-key-helper=CMD|none]
 
 Implementations:
-  task:      checkout-sync, claim-check, content-based-router, content-enricher, dead-letter-channel, multi-consumer, scatter-gather
+  task:      checkout-sync, claim-check, content-based-router, content-enricher, dead-letter-channel, multi-consumer, scatter-gather,
+             dq-D01 .. dq-D18 (discover question tasks: single shot, graded from answer.json)
   language:  ballerina, go, java, python
   harness:   claude, pi
 
@@ -307,11 +309,14 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 			benchmark.End()
 		}()
 	}
+	if definition.IsAnswer() {
+		return executeAnswerRun(result, directory, definition, agent, benchmark)
+	}
 	ports, err := allocatePorts(definition.Resources.NPorts)
 	if err != nil {
 		return infrastructureFailure(result, err)
 	}
-	allocated := task.AllocResources{Ports: ports}
+	allocated := task.AllocResources{Ports: ports, WorkDir: directory}
 	defer allocated.Cleanup()
 	handle := definition.InitFn(allocated)
 	cleanupTask, err := handle.Setup()
@@ -330,26 +335,7 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 	if err := agent.Start(directory, benchmark); err != nil {
 		return infrastructureFailure(result, err)
 	}
-	defer func() {
-		if count, err := agent.TokenCount(); err == nil {
-			result.Tokens = benchresult.TokenCount{
-				Input: count.Input, Output: count.Output, Total: count.Total,
-				CacheRead: count.CacheRead, CacheWrite: count.CacheWrite,
-			}
-		} else {
-			result.Error = joinErrors(result.Error, err.Error())
-		}
-		if err := agent.End(); err != nil {
-			result.Error = joinErrors(result.Error, err.Error())
-		}
-		if reported, ok := agent.ReportedCostUSD(); ok {
-			result.ReportedCostUSD = &reported
-		}
-		if err := attachToolUsage(&result, filepath.Join(directory, harness.ClaudeStreamArtifact)); err != nil {
-			result.Error = joinErrors(result.Error, err.Error())
-		}
-		applyEstimatedCost(&result)
-	}()
+	defer finishAgent(&result, agent, directory)
 	started := time.Now()
 	defer func() { result.DurationSeconds = time.Since(started).Seconds() }()
 
@@ -407,6 +393,76 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 			return agentFailure(result, err)
 		}
 	}
+}
+
+// finishAgent collects the agent's usage and artifacts after a run; deferred so
+// it runs on every exit path.
+func finishAgent(result *runResult, agent harness.Harness, directory string) {
+	if count, err := agent.TokenCount(); err == nil {
+		result.Tokens = benchresult.TokenCount{
+			Input: count.Input, Output: count.Output, Total: count.Total,
+			CacheRead: count.CacheRead, CacheWrite: count.CacheWrite,
+		}
+	} else {
+		result.Error = joinErrors(result.Error, err.Error())
+	}
+	if err := agent.End(); err != nil {
+		result.Error = joinErrors(result.Error, err.Error())
+	}
+	if reported, ok := agent.ReportedCostUSD(); ok {
+		result.ReportedCostUSD = &reported
+	}
+	if err := attachToolUsage(result, filepath.Join(directory, harness.ClaudeStreamArtifact)); err != nil {
+		result.Error = joinErrors(result.Error, err.Error())
+	}
+	applyEstimatedCost(result)
+}
+
+// executeAnswerRun runs a single-shot answer task: no ports, no project, no
+// feedback. The prompt goes out as is, and the answer file the agent left in
+// directory is graded once the agent's turn ends.
+func executeAnswerRun(result runResult, directory string, definition task.Task, agent harness.Harness, benchmark tracing.BenchmarkSpan) runResult {
+	handle := definition.InitFn(task.AllocResources{WorkDir: directory})
+	cleanupTask, err := handle.Setup()
+	if err != nil {
+		return infrastructureFailure(result, err)
+	}
+	defer func() {
+		if err := cleanupTask(); err != nil {
+			result.Error = joinErrors(result.Error, err.Error())
+		}
+	}()
+	prompt, err := handle.Prompt()
+	if err != nil {
+		return infrastructureFailure(result, err)
+	}
+	if err := agent.Start(directory, benchmark); err != nil {
+		return infrastructureFailure(result, err)
+	}
+	started := time.Now()
+	_, sendErr := agent.SendMessage(prompt)
+	result.DurationSeconds = time.Since(started).Seconds()
+	finishAgent(&result, agent, directory)
+	if sendErr != nil {
+		result = agentFailure(result, sendErr)
+		if result.InfraFailure {
+			return result
+		}
+	}
+	if grader, ok := handle.(answer.Grader); ok {
+		grade, err := grader.Grade()
+		if err != nil {
+			return infrastructureFailure(result, err)
+		}
+		result.Answer = &grade
+		result.Passed = grade.Passed()
+	} else if result.Passed, err = handle.Validation(); err != nil {
+		return infrastructureFailure(result, err)
+	}
+	if !result.Passed && result.Error == "" {
+		result.Error = hiddenValidationFailure
+	}
+	return result
 }
 
 // infrastructureFailure records err as a failure of the benchmark machinery
@@ -477,24 +533,11 @@ func attachToolUsage(result *runResult, path string) error {
 }
 
 func selectTask(name string) (task.Task, error) {
-	switch name {
-	case "claim-check":
-		return task.NewClaimCheck(), nil
-	case "checkout-sync":
-		return task.NewCheckoutSync(), nil
-	case "content-based-router":
-		return task.NewContentBasedRouter(), nil
-	case "content-enricher":
-		return task.NewContentEnricher(), nil
-	case "dead-letter-channel":
-		return task.NewDeadLetterChannel(), nil
-	case "multi-consumer":
-		return task.NewMultiConsumer(), nil
-	case "scatter-gather":
-		return task.NewScatterGather(), nil
-	default:
+	definition, ok := task.ByName(name)
+	if !ok {
 		return task.Task{}, fmt.Errorf("unknown task %q", name)
 	}
+	return definition, nil
 }
 
 func selectLanguage(name string) (language.Language, error) {
