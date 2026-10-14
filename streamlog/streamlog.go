@@ -51,6 +51,10 @@ type Summary struct {
 	Models map[string]ModelUsage `json:"models,omitempty"`
 	// MalformedLines counts log lines that were not valid JSON.
 	MalformedLines int `json:"malformedLines,omitempty"`
+	// Probes are the Bash commands and the Read, Grep and Glob paths and
+	// patterns of every tool call, in order; not persisted (callers flag
+	// bypasses from them).
+	Probes []string `json:"-"`
 }
 
 // ModelUsage is the usage of one model. CacheWriteUnsplit counts cache writes
@@ -222,11 +226,26 @@ func (s *Summary) add(current event, seenTurns, seenTools map[string]struct{}, a
 			}
 			s.ToolCalls++
 			s.Tools[block.Name]++
+			s.Probes = append(s.Probes, probes(block.Name, block.Input)...)
 			for _, family := range classify(block.Name, block.Input) {
 				s.Families[family]++
 			}
 		}
 	}
+}
+
+// probes returns the command, paths and patterns a tool call names.
+func probes(name string, input json.RawMessage) []string {
+	var arguments map[string]any
+	_ = json.Unmarshal(input, &arguments)
+	keys := map[string][]string{"Bash": {"command"}, "Read": {"file_path"}, "Grep": {"path", "pattern", "glob"}, "Glob": {"path", "pattern"}}[name]
+	var found []string
+	for _, key := range keys {
+		if value, ok := arguments[key].(string); ok && value != "" {
+			found = append(found, value)
+		}
+	}
+	return found
 }
 
 func classify(name string, input json.RawMessage) []string {
