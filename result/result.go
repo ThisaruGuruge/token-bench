@@ -8,11 +8,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"token-bench/calllog"
 	"token-bench/streamlog"
+	"token-bench/task/answer"
 )
 
 const (
-	SchemaVersion         = 5
+	SchemaVersion         = 6
+	schemaVersion5        = 5
 	schemaVersion4        = 4
 	previousSchemaVersion = 3
 	legacySchemaVersion   = 2
@@ -62,6 +65,27 @@ type Environment struct {
 	// Credentials names the credential source (never the credential):
 	// "apiKeyHelper: <command>" or "inherited".
 	Credentials string `json:"credentials,omitempty"`
+	// Container records the image an arm ran in (schema 6), when it ran in one.
+	Container *Container `json:"container,omitempty"`
+	// CacheSeed records the discover cache seed copied into the run (schema 6).
+	CacheSeed *CacheSeed `json:"cacheSeed,omitempty"`
+	// DisallowedTools lists the tools denied to the agent beyond the harness default.
+	DisallowedTools []string `json:"disallowedTools,omitempty"`
+}
+
+// Container identifies the image a run's agent ran in.
+type Container struct {
+	Image   string `json:"image"`
+	ImageID string `json:"imageId,omitempty"`
+	// Labels are the image's org.token-bench.* labels (branch commit, bala hash, versions).
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// CacheSeed identifies the discover cache seed a run started from.
+type CacheSeed struct {
+	Dir   string `json:"dir"`
+	Hash  string `json:"hash"`
+	Files int    `json:"files"`
 }
 
 // Result is the persisted outcome and normalized CLI configuration for one run.
@@ -92,6 +116,10 @@ type Result struct {
 	ReportedCostUSD *float64 `json:"reportedCostUsd,omitempty"`
 	// ToolUsage summarizes tool calls parsed from the harness stream log.
 	ToolUsage *streamlog.Summary `json:"toolUsage,omitempty"`
+	// Answer is the field-by-field grade of an answer task (schema 6).
+	Answer *answer.Grade `json:"answer,omitempty"`
+	// Discover summarizes the `bal discover` call log of an arm that logs calls (schema 6).
+	Discover *calllog.Summary `json:"discover,omitempty"`
 	// Environment records the toolchain and arm setup; absent in older results.
 	Environment *Environment `json:"environment,omitempty"`
 	Error       string       `json:"error,omitempty"`
@@ -144,7 +172,7 @@ func Read(path string) (Result, error) {
 // Validate checks the persisted schema and required metadata.
 func (r Result) Validate() error {
 	switch r.SchemaVersion {
-	case legacySchemaVersion, previousSchemaVersion, schemaVersion4, SchemaVersion:
+	case legacySchemaVersion, previousSchemaVersion, schemaVersion4, schemaVersion5, SchemaVersion:
 	default:
 		return fmt.Errorf("unsupported result schema version %d", r.SchemaVersion)
 	}
