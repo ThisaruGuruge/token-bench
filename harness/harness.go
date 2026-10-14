@@ -32,6 +32,10 @@ type (
 		// Code's only credential source; empty keeps inherited credentials.
 		// Claude harness only.
 		APIKeyHelper string
+		// Container runs each Claude session in a fresh container; Claude harness only.
+		Container *Container
+		// DisallowedTools are denied in addition to the harness default; Claude harness only.
+		DisallowedTools []string
 		// Status receives best-effort formatted activity updates. The caller owns
 		// the capacity-one channel and must not close it while a harness is running.
 		Status chan string
@@ -51,6 +55,8 @@ type (
 		End() error
 	}
 	TokenCount = shared.TokenCount
+	// Container is a per-session container for the Claude harness.
+	Container = claude.Container
 	// InfraError marks a harness or model API failure; see IsInfrastructure.
 	InfraError = shared.InfraError
 	// StopError marks a session stopped on a spend or turn cap; see StopReason.
@@ -67,7 +73,7 @@ func NewClaude(config Config) Harness {
 	return claude.New(claude.Config{
 		SkillsDir: config.SkillsDir, Status: config.Status, Model: config.Model, PluginDir: config.PluginDir,
 		ExtraSystemPrompt: config.ExtraSystemPrompt, Env: config.Env, MaxBudgetUSD: config.MaxBudgetUSD,
-		APIKeyHelper: config.APIKeyHelper,
+		APIKeyHelper: config.APIKeyHelper, Container: config.Container, DisallowedTools: config.DisallowedTools,
 	})
 }
 

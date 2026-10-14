@@ -55,6 +55,12 @@ type Config struct {
 	// runs it itself, so the key is never in the environment of Claude Code or
 	// of the commands the agent runs, and inherited credentials are removed.
 	APIKeyHelper string
+	// Container, when set, runs each session in a fresh container of this
+	// image; APIKeyHelper is then run on the host and the key handed to the
+	// container on stdin.
+	Container *Container
+	// DisallowedTools are denied in addition to AskUserQuestion.
+	DisallowedTools []string
 }
 
 // credentialVariables select or carry model API credentials; with an
@@ -81,6 +87,20 @@ func (c *claude) processEnvironment(inherited []string) []string {
 	return append(append(environment, "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1"), c.config.Env...)
 }
 
+// hostEnvironment is the environment of the docker client of a container
+// session: the inherited one without credential variables. The container's
+// own environment is set with -e, never inherited.
+func (c *claude) hostEnvironment(inherited []string) []string {
+	var environment []string
+	for _, entry := range inherited {
+		name, _, _ := strings.Cut(entry, "=")
+		if !slices.Contains(credentialVariables, name) {
+			environment = append(environment, entry)
+		}
+	}
+	return environment
+}
+
 // TokenCount contains usage dimensions reported by Claude Code.
 type TokenCount = shared.TokenCount
 
@@ -98,20 +118,22 @@ type claude struct {
 }
 
 type runningProcess struct {
-	command     *exec.Cmd
-	stdin       io.WriteCloser
-	results     chan resultEvent
-	stopping    chan struct{}
-	stopOnce    sync.Once
-	processDone *asyncStatus
-	readerDone  *asyncStatus
-	streamFile  *os.File
-	stderrFile  *os.File
-	streamPath  string
-	stderrPath  string
-	workingDir  string
-	trace       *traceAdapter
-	status      chan string
+	// containerName is the session's container, when it runs in one.
+	containerName string
+	command       *exec.Cmd
+	stdin         io.WriteCloser
+	results       chan resultEvent
+	stopping      chan struct{}
+	stopOnce      sync.Once
+	processDone   *asyncStatus
+	readerDone    *asyncStatus
+	streamFile    *os.File
+	stderrFile    *os.File
+	streamPath    string
+	stderrPath    string
+	workingDir    string
+	trace         *traceAdapter
+	status        chan string
 }
 
 type asyncStatus struct {
@@ -190,9 +212,12 @@ func (c *claude) Start(workingDir string, benchmark tracing.BenchmarkSpan) error
 	if c.process != nil {
 		return errors.New("Claude is already started")
 	}
-	executable, err := exec.LookPath("claude")
-	if err != nil {
-		return fmt.Errorf("find claude: %w", err)
+	executable := "docker"
+	if c.config.Container == nil {
+		var err error
+		if executable, err = exec.LookPath("claude"); err != nil {
+			return fmt.Errorf("find claude: %w", err)
+		}
 	}
 	if info, err := os.Stat(workingDir); err != nil {
 		return fmt.Errorf("inspect working directory: %w", err)
@@ -228,9 +253,26 @@ func (c *claude) startProcess(executable, workingDir string, benchmark tracing.B
 		return nil, fmt.Errorf("create Claude stderr log: %w", err)
 	}
 
-	command := exec.Command(executable, c.startArguments()...)
+	var key []byte
+	containerName := ""
+	arguments := c.startArguments()
+	environment := c.processEnvironment(os.Environ())
+	if c.config.Container != nil {
+		if c.config.APIKeyHelper == "" {
+			return nil, c.cleanupUnstartedProcess(streamFile, stderrFile, workingDir, errors.New("a container session needs an API key helper"))
+		}
+		if key, err = readAPIKey(c.config.APIKeyHelper); err != nil {
+			return nil, c.cleanupUnstartedProcess(streamFile, stderrFile, workingDir, &shared.InfraError{Err: err})
+		}
+		defer clear(key)
+		containerName = newContainerName()
+		executable = "docker"
+		arguments = append(c.config.Container.dockerArguments(containerName, workingDir), arguments...)
+		environment = c.hostEnvironment(os.Environ())
+	}
+	command := exec.Command(executable, arguments...)
 	command.Dir = workingDir
-	command.Env = c.processEnvironment(os.Environ())
+	command.Env = environment
 	command.Stderr = stderrFile
 	stdin, err := command.StdinPipe()
 	if err != nil {
@@ -247,20 +289,29 @@ func (c *claude) startProcess(executable, workingDir string, benchmark tracing.B
 		return nil, c.cleanupUnstartedProcess(streamFile, stderrFile, workingDir, fmt.Errorf("start Claude: %w", err))
 	}
 
+	if key != nil {
+		if err := sendKey(stdin, key); err != nil {
+			_ = command.Process.Kill()
+			removeContainer(containerName)
+			_ = command.Wait()
+			return nil, c.cleanupUnstartedProcess(streamFile, stderrFile, workingDir, &shared.InfraError{Err: err})
+		}
+	}
 	running := &runningProcess{
-		command:     command,
-		stdin:       stdin,
-		results:     make(chan resultEvent, 64),
-		stopping:    make(chan struct{}),
-		processDone: newAsyncStatus(),
-		readerDone:  newAsyncStatus(),
-		streamFile:  streamFile,
-		stderrFile:  stderrFile,
-		streamPath:  streamFile.Name(),
-		stderrPath:  stderrFile.Name(),
-		workingDir:  workingDir,
-		trace:       newTraceAdapter(benchmark, c.Model()),
-		status:      c.config.Status,
+		containerName: containerName,
+		command:       command,
+		stdin:         stdin,
+		results:       make(chan resultEvent, 64),
+		stopping:      make(chan struct{}),
+		processDone:   newAsyncStatus(),
+		readerDone:    newAsyncStatus(),
+		streamFile:    streamFile,
+		stderrFile:    stderrFile,
+		streamPath:    streamFile.Name(),
+		stderrPath:    stderrFile.Name(),
+		workingDir:    workingDir,
+		trace:         newTraceAdapter(benchmark, c.Model()),
+		status:        c.config.Status,
 	}
 	go func() {
 		// StdoutPipe must be drained before Wait so the final result and log tail
@@ -400,7 +451,7 @@ func (c *claude) startArguments() []string {
 		"--model", c.config.Model,
 		"--effort", effort,
 		"--dangerously-skip-permissions",
-		"--disallowedTools", "AskUserQuestion",
+		"--disallowedTools", strings.Join(append([]string{"AskUserQuestion"}, c.config.DisallowedTools...), ","),
 		"--append-system-prompt", c.systemPrompt(),
 		"--max-budget-usd", strconv.FormatFloat(c.config.MaxBudgetUSD, 'f', -1, 64),
 		"--setting-sources", "",
@@ -416,7 +467,11 @@ func (c *claude) startArguments() []string {
 		arguments = append(arguments, "--plugin-dir", c.config.PluginDir)
 	}
 	if c.config.APIKeyHelper != "" {
-		settings, _ := json.Marshal(map[string]string{"apiKeyHelper": c.config.APIKeyHelper})
+		helper := c.config.APIKeyHelper
+		if c.config.Container != nil {
+			helper = ContainerKeyHelper
+		}
+		settings, _ := json.Marshal(map[string]string{"apiKeyHelper": helper})
 		arguments = append(arguments, "--settings", string(settings))
 	}
 	return arguments
@@ -544,6 +599,9 @@ func (c *claude) endLocked() error {
 		result = errors.Join(result, errors.New("Claude did not exit within 10s"))
 		if err := running.command.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
 			result = errors.Join(result, fmt.Errorf("kill Claude: %w", err))
+		}
+		if running.containerName != "" {
+			removeContainer(running.containerName)
 		}
 		<-running.processDone.done
 	}
