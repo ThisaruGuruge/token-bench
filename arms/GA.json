@@ -1,0 +1,11 @@
+{
+  "id": "GA",
+  "label": "discover grammar A (hierarchical-rich), container",
+  "discoverVisible": true,
+  "systemPromptFile": "hints/discover-neutral.md",
+  "container": { "image": "token-bench-discover:GA" },
+  "callLog": true,
+  "cacheSeed": "~/Projects/Ballerina/cli-improvements/benchmark/grammar/cache-seed/bal-discover",
+  "disallowedTools": ["WebSearch", "WebFetch"],
+  "grammar": "A"
+}

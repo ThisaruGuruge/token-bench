@@ -1,30 +1,201 @@
 {
   "phase0": {
     "description": "First answer: arms A and D, 3 runs each on the checkout-sync scenario (Sonnet).",
-    "arms": ["A", "D"],
-    "scenarios": ["checkout-sync"],
+    "arms": [
+      "A",
+      "D"
+    ],
+    "scenarios": [
+      "checkout-sync"
+    ],
     "runs": 3,
     "model": "sonnet"
   },
   "phase1": {
     "description": "Add arms B, C and E on the Phase 0 scenario (Sonnet).",
-    "arms": ["B", "C", "E"],
-    "scenarios": ["checkout-sync"],
+    "arms": [
+      "B",
+      "C",
+      "E"
+    ],
+    "scenarios": [
+      "checkout-sync"
+    ],
     "runs": 3,
     "model": "sonnet"
   },
   "phase2": {
     "description": "All arms on every existing scenario (Sonnet). Add the new connector scenarios here once they exist.",
-    "arms": ["A", "B", "C", "D", "E"],
-    "scenarios": ["checkout-sync", "claim-check", "content-based-router", "content-enricher", "dead-letter-channel", "multi-consumer", "scatter-gather"],
+    "arms": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "scenarios": [
+      "checkout-sync",
+      "claim-check",
+      "content-based-router",
+      "content-enricher",
+      "dead-letter-channel",
+      "multi-consumer",
+      "scatter-gather"
+    ],
     "runs": 5,
     "model": "sonnet"
   },
   "phase3": {
     "description": "Opus confirmation subset: all arms on the Phase 0 scenario.",
-    "arms": ["A", "B", "C", "D", "E"],
-    "scenarios": ["checkout-sync"],
+    "arms": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "scenarios": [
+      "checkout-sync"
+    ],
     "runs": 3,
     "model": "opus"
+  },
+  "g1a-haiku-smoke": {
+    "description": "Grammar benchmark G1a: Haiku smoke, all 18 question tasks x GA/GB x 1 (cap $1).",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D01",
+      "dq-D02",
+      "dq-D03",
+      "dq-D04",
+      "dq-D05",
+      "dq-D06",
+      "dq-D07",
+      "dq-D08",
+      "dq-D09",
+      "dq-D10",
+      "dq-D11",
+      "dq-D12",
+      "dq-D13",
+      "dq-D14",
+      "dq-D15",
+      "dq-D16",
+      "dq-D17",
+      "dq-D18"
+    ],
+    "runs": 1,
+    "model": "haiku",
+    "maxBudgetUsd": 1
+  },
+  "g1b-sonnet-pilot": {
+    "description": "Grammar benchmark G1b: Sonnet pilot, 6 question tasks x GA/GB x 2 (cap $3).",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D02",
+      "dq-D03",
+      "dq-D08",
+      "dq-D10",
+      "dq-D13",
+      "dq-D17"
+    ],
+    "runs": 2,
+    "model": "sonnet",
+    "maxBudgetUsd": 3
+  },
+  "g2-sonnet": {
+    "description": "Grammar benchmark G2: Sonnet main, 18 question tasks x GA/GB x 6 (cap $3). Not approved yet.",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D01",
+      "dq-D02",
+      "dq-D03",
+      "dq-D04",
+      "dq-D05",
+      "dq-D06",
+      "dq-D07",
+      "dq-D08",
+      "dq-D09",
+      "dq-D10",
+      "dq-D11",
+      "dq-D12",
+      "dq-D13",
+      "dq-D14",
+      "dq-D15",
+      "dq-D16",
+      "dq-D17",
+      "dq-D18"
+    ],
+    "runs": 6,
+    "model": "sonnet",
+    "maxBudgetUsd": 3
+  },
+  "g3-haiku": {
+    "description": "Grammar benchmark G3: Haiku, 18 question tasks x GA/GB x 6 (cap $1). Not approved yet.",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D01",
+      "dq-D02",
+      "dq-D03",
+      "dq-D04",
+      "dq-D05",
+      "dq-D06",
+      "dq-D07",
+      "dq-D08",
+      "dq-D09",
+      "dq-D10",
+      "dq-D11",
+      "dq-D12",
+      "dq-D13",
+      "dq-D14",
+      "dq-D15",
+      "dq-D16",
+      "dq-D17",
+      "dq-D18"
+    ],
+    "runs": 6,
+    "model": "haiku",
+    "maxBudgetUsd": 1
+  },
+  "g4-opus": {
+    "description": "Grammar benchmark G4: Opus confirmation, 18 question tasks x GA/GB x 3 (cap $5). Not approved yet.",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D01",
+      "dq-D02",
+      "dq-D03",
+      "dq-D04",
+      "dq-D05",
+      "dq-D06",
+      "dq-D07",
+      "dq-D08",
+      "dq-D09",
+      "dq-D10",
+      "dq-D11",
+      "dq-D12",
+      "dq-D13",
+      "dq-D14",
+      "dq-D15",
+      "dq-D16",
+      "dq-D17",
+      "dq-D18"
+    ],
+    "runs": 3,
+    "model": "opus",
+    "maxBudgetUsd": 5
   }
 }

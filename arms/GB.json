@@ -1,0 +1,11 @@
+{
+  "id": "GB",
+  "label": "discover grammar B (namespaces), container",
+  "discoverVisible": true,
+  "systemPromptFile": "hints/discover-neutral.md",
+  "container": { "image": "token-bench-discover:GB" },
+  "callLog": true,
+  "cacheSeed": "~/Projects/Ballerina/cli-improvements/benchmark/grammar/cache-seed/bal-discover",
+  "disallowedTools": ["WebSearch", "WebFetch"],
+  "grammar": "B"
+}
