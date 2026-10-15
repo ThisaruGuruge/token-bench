@@ -1,0 +1,492 @@
+[
+ {
+  "id": "producer-listing",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer"
+  ]
+ },
+ {
+  "id": "container-left-out",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "send"
+  ],
+  "B": [
+   "method",
+   "send",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "addressed-member",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Consumer",
+   "getTopicPartitions"
+  ],
+  "B": [
+   "method",
+   "getTopicPartitions",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Consumer"
+  ]
+ },
+ {
+  "id": "service",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "service",
+   "Service"
+  ],
+  "B": [
+   "service",
+   "Service",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "dependent-return",
+  "expectExit": 0,
+  "A": [
+   "ballerina/http:2.16.6",
+   "client",
+   "Client",
+   "post"
+  ],
+  "B": [
+   "method",
+   "post",
+   "-p",
+   "ballerina/http:2.16.6",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "type",
+  "expectExit": 0,
+  "A": [
+   "ballerina/http:2.16.6",
+   "type",
+   "ClientConfiguration"
+  ],
+  "B": [
+   "type",
+   "ClientConfiguration",
+   "-p",
+   "ballerina/http:2.16.6"
+  ]
+ },
+ {
+  "id": "class-member",
+  "expectExit": 0,
+  "A": [
+   "ballerina/http:2.16.6",
+   "class",
+   "Response",
+   "getJsonPayload"
+  ],
+  "B": [
+   "method",
+   "getJsonPayload",
+   "-p",
+   "ballerina/http:2.16.6",
+   "--class",
+   "Response"
+  ]
+ },
+ {
+  "id": "package-search",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/github:6.1.0",
+   "search",
+   "issues"
+  ],
+  "B": [
+   "search",
+   "issues",
+   "-p",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "resource-path-params",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/github:6.1.0",
+   "client",
+   "Client",
+   "repos/:owner/:repo/issues",
+   "post"
+  ],
+  "B": [
+   "resource",
+   "repos/:owner/:repo/issues",
+   "post",
+   "-p",
+   "ballerinax/github:6.1.0",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "escaped-segment",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/github:6.1.0",
+   "client",
+   "Client",
+   "gists/public",
+   "get"
+  ],
+  "B": [
+   "resource",
+   "gists/public",
+   "get",
+   "-p",
+   "ballerinax/github:6.1.0",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "twilio-member",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "createMessage"
+  ],
+  "B": [
+   "method",
+   "createMessage",
+   "-p",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "listener-config",
+  "expectExit": 0,
+  "A": [
+   "ballerina/ftp:2.22.0",
+   "type",
+   "ListenerConfiguration"
+  ],
+  "B": [
+   "type",
+   "ListenerConfiguration",
+   "-p",
+   "ballerina/ftp:2.22.0"
+  ]
+ },
+ {
+  "id": "readme-section",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/postgresql:1.19.1",
+   "readme",
+   "19"
+  ],
+  "B": [
+   "readme",
+   "19",
+   "-p",
+   "ballerinax/postgresql:1.19.1"
+  ]
+ },
+ {
+  "id": "constructor",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/postgresql:1.19.1",
+   "client",
+   "Client",
+   "init"
+  ],
+  "B": [
+   "method",
+   "init",
+   "-p",
+   "ballerinax/postgresql:1.19.1",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "generic-return",
+  "expectExit": 0,
+  "A": [
+   "ballerina/sql:1.19.0",
+   "client",
+   "queryRow"
+  ],
+  "B": [
+   "method",
+   "queryRow",
+   "-p",
+   "ballerina/sql:1.19.0"
+  ]
+ },
+ {
+  "id": "submodule-member",
+  "expectExit": 0,
+  "A": [
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "class",
+   "DefaultDataLoader",
+   "get"
+  ],
+  "B": [
+   "method",
+   "get",
+   "-p",
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "--class",
+   "DefaultDataLoader"
+  ]
+ },
+ {
+  "id": "module-function",
+  "expectExit": 0,
+  "A": [
+   "ballerina/io:1.8.2",
+   "funcs",
+   "fileReadJson"
+  ],
+  "B": [
+   "function",
+   "fileReadJson",
+   "-p",
+   "ballerina/io:1.8.2"
+  ]
+ },
+ {
+  "id": "overview",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/kafka:4.6.6"
+  ],
+  "B": [
+   "package",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "page-2",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "Client",
+   "--page",
+   "2"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/twilio:5.0.2",
+   "--client",
+   "Client",
+   "--page",
+   "2"
+  ]
+ },
+ {
+  "id": "filter",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "Client",
+   "--filter",
+   "Call"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/twilio:5.0.2",
+   "--client",
+   "Client",
+   "--filter",
+   "Call"
+  ]
+ },
+ {
+  "id": "filter-no-match",
+  "expectExit": 0,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer",
+   "--filter",
+   "zzzz"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer",
+   "--filter",
+   "zzzz"
+  ]
+ },
+ {
+  "id": "unknown-package",
+  "expectExit": 1,
+  "A": [
+   "ballerinax/nosuchpkg9271",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/nosuchpkg9271"
+  ]
+ },
+ {
+  "id": "unknown-version",
+  "expectExit": 1,
+  "A": [
+   "ballerinax/kafka:99.0.0",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/kafka:99.0.0"
+  ]
+ },
+ {
+  "id": "unknown-module",
+  "expectExit": 1,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "-m",
+   "nosuch",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "-m",
+   "nosuch"
+  ]
+ },
+ {
+  "id": "unknown-name",
+  "expectExit": 1,
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "sendMessage"
+  ],
+  "B": [
+   "method",
+   "sendMessage",
+   "-p",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "ambiguous-member",
+  "expectExit": 3,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "getTopicPartitions"
+  ],
+  "B": [
+   "method",
+   "getTopicPartitions",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "unknown-bucket-or-noun",
+  "expectExit": 2,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "clients"
+  ],
+  "B": [
+   "clients",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "unknown-flag",
+  "expectExit": 2,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "--bogus"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--bogus"
+  ]
+ },
+ {
+  "id": "partial-version",
+  "expectExit": 2,
+  "A": [
+   "ballerinax/kafka:4.6",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/kafka:4.6"
+  ]
+ },
+ {
+  "id": "page-out-of-range",
+  "expectExit": null,
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer",
+   "--page",
+   "9"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer",
+   "--page",
+   "9"
+  ]
+ }
+]
