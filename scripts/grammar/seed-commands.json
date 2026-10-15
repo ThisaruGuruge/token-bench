@@ -1,0 +1,851 @@
+[
+ {
+  "id": "p-producer-listing",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer"
+  ]
+ },
+ {
+  "id": "p-container-left-out",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "send"
+  ],
+  "B": [
+   "method",
+   "send",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "p-addressed-member",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Consumer",
+   "getTopicPartitions"
+  ],
+  "B": [
+   "method",
+   "getTopicPartitions",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Consumer"
+  ]
+ },
+ {
+  "id": "p-service",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "service",
+   "Service"
+  ],
+  "B": [
+   "service",
+   "Service",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "p-dependent-return",
+  "A": [
+   "ballerina/http:2.16.6",
+   "client",
+   "Client",
+   "post"
+  ],
+  "B": [
+   "method",
+   "post",
+   "-p",
+   "ballerina/http:2.16.6",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "p-type",
+  "A": [
+   "ballerina/http:2.16.6",
+   "type",
+   "ClientConfiguration"
+  ],
+  "B": [
+   "type",
+   "ClientConfiguration",
+   "-p",
+   "ballerina/http:2.16.6"
+  ]
+ },
+ {
+  "id": "p-class-member",
+  "A": [
+   "ballerina/http:2.16.6",
+   "class",
+   "Response",
+   "getJsonPayload"
+  ],
+  "B": [
+   "method",
+   "getJsonPayload",
+   "-p",
+   "ballerina/http:2.16.6",
+   "--class",
+   "Response"
+  ]
+ },
+ {
+  "id": "p-package-search",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "search",
+   "issues"
+  ],
+  "B": [
+   "search",
+   "issues",
+   "-p",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "p-resource-path-params",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "client",
+   "Client",
+   "repos/:owner/:repo/issues",
+   "post"
+  ],
+  "B": [
+   "resource",
+   "repos/:owner/:repo/issues",
+   "post",
+   "-p",
+   "ballerinax/github:6.1.0",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "p-escaped-segment",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "client",
+   "Client",
+   "gists/public",
+   "get"
+  ],
+  "B": [
+   "resource",
+   "gists/public",
+   "get",
+   "-p",
+   "ballerinax/github:6.1.0",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "p-twilio-member",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "createMessage"
+  ],
+  "B": [
+   "method",
+   "createMessage",
+   "-p",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "p-listener-config",
+  "A": [
+   "ballerina/ftp:2.22.0",
+   "type",
+   "ListenerConfiguration"
+  ],
+  "B": [
+   "type",
+   "ListenerConfiguration",
+   "-p",
+   "ballerina/ftp:2.22.0"
+  ]
+ },
+ {
+  "id": "p-readme-section",
+  "A": [
+   "ballerinax/postgresql:1.19.1",
+   "readme",
+   "19"
+  ],
+  "B": [
+   "readme",
+   "19",
+   "-p",
+   "ballerinax/postgresql:1.19.1"
+  ]
+ },
+ {
+  "id": "p-constructor",
+  "A": [
+   "ballerinax/postgresql:1.19.1",
+   "client",
+   "Client",
+   "init"
+  ],
+  "B": [
+   "method",
+   "init",
+   "-p",
+   "ballerinax/postgresql:1.19.1",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "p-generic-return",
+  "A": [
+   "ballerina/sql:1.19.0",
+   "client",
+   "queryRow"
+  ],
+  "B": [
+   "method",
+   "queryRow",
+   "-p",
+   "ballerina/sql:1.19.0"
+  ]
+ },
+ {
+  "id": "p-submodule-member",
+  "A": [
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "class",
+   "DefaultDataLoader",
+   "get"
+  ],
+  "B": [
+   "method",
+   "get",
+   "-p",
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "--class",
+   "DefaultDataLoader"
+  ]
+ },
+ {
+  "id": "p-module-function",
+  "A": [
+   "ballerina/io:1.8.2",
+   "funcs",
+   "fileReadJson"
+  ],
+  "B": [
+   "function",
+   "fileReadJson",
+   "-p",
+   "ballerina/io:1.8.2"
+  ]
+ },
+ {
+  "id": "p-overview",
+  "A": [
+   "ballerinax/kafka:4.6.6"
+  ],
+  "B": [
+   "package",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "p-page-2",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "Client",
+   "--page",
+   "2"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/twilio:5.0.2",
+   "--client",
+   "Client",
+   "--page",
+   "2"
+  ]
+ },
+ {
+  "id": "p-filter",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "Client",
+   "--filter",
+   "Call"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/twilio:5.0.2",
+   "--client",
+   "Client",
+   "--filter",
+   "Call"
+  ]
+ },
+ {
+  "id": "p-filter-no-match",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer",
+   "--filter",
+   "zzzz"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer",
+   "--filter",
+   "zzzz"
+  ]
+ },
+ {
+  "id": "overview-kafka",
+  "A": [
+   "ballerinax/kafka:4.6.6"
+  ],
+  "B": [
+   "package",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "readme-kafka",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "overview-http",
+  "A": [
+   "ballerina/http:2.16.6"
+  ],
+  "B": [
+   "package",
+   "ballerina/http:2.16.6"
+  ]
+ },
+ {
+  "id": "readme-http",
+  "A": [
+   "ballerina/http:2.16.6",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/http:2.16.6"
+  ]
+ },
+ {
+  "id": "overview-github",
+  "A": [
+   "ballerinax/github:6.1.0"
+  ],
+  "B": [
+   "package",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "readme-github",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "overview-twilio",
+  "A": [
+   "ballerinax/twilio:5.0.2"
+  ],
+  "B": [
+   "package",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "readme-twilio",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "overview-ftp",
+  "A": [
+   "ballerina/ftp:2.22.0"
+  ],
+  "B": [
+   "package",
+   "ballerina/ftp:2.22.0"
+  ]
+ },
+ {
+  "id": "readme-ftp",
+  "A": [
+   "ballerina/ftp:2.22.0",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/ftp:2.22.0"
+  ]
+ },
+ {
+  "id": "overview-postgresql",
+  "A": [
+   "ballerinax/postgresql:1.19.1"
+  ],
+  "B": [
+   "package",
+   "ballerinax/postgresql:1.19.1"
+  ]
+ },
+ {
+  "id": "readme-postgresql",
+  "A": [
+   "ballerinax/postgresql:1.19.1",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/postgresql:1.19.1"
+  ]
+ },
+ {
+  "id": "overview-sql",
+  "A": [
+   "ballerina/sql:1.19.0"
+  ],
+  "B": [
+   "package",
+   "ballerina/sql:1.19.0"
+  ]
+ },
+ {
+  "id": "readme-sql",
+  "A": [
+   "ballerina/sql:1.19.0",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/sql:1.19.0"
+  ]
+ },
+ {
+  "id": "overview-graphql",
+  "A": [
+   "ballerina/graphql:1.19.0"
+  ],
+  "B": [
+   "package",
+   "ballerina/graphql:1.19.0"
+  ]
+ },
+ {
+  "id": "readme-graphql",
+  "A": [
+   "ballerina/graphql:1.19.0",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/graphql:1.19.0"
+  ]
+ },
+ {
+  "id": "overview-io",
+  "A": [
+   "ballerina/io:1.8.2"
+  ],
+  "B": [
+   "package",
+   "ballerina/io:1.8.2"
+  ]
+ },
+ {
+  "id": "readme-io",
+  "A": [
+   "ballerina/io:1.8.2",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/io:1.8.2"
+  ]
+ },
+ {
+  "id": "d01-producer",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer"
+  ]
+ },
+ {
+  "id": "d02-send-producer",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer",
+   "send"
+  ],
+  "B": [
+   "method",
+   "send",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer"
+  ]
+ },
+ {
+  "id": "d02-record",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "type",
+   "AnydataProducerRecord"
+  ],
+  "B": [
+   "type",
+   "AnydataProducerRecord",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "d04-listener",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "type",
+   "Listener"
+  ],
+  "B": [
+   "type",
+   "Listener",
+   "-p",
+   "ballerinax/kafka:4.6.6"
+  ]
+ },
+ {
+  "id": "d08-body",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "type",
+   "RepoIssuesBody"
+  ],
+  "B": [
+   "type",
+   "RepoIssuesBody",
+   "-p",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "d08-search-create",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "search",
+   "create",
+   "issue"
+  ],
+  "B": [
+   "search",
+   "create",
+   "issue",
+   "-p",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "d09-search",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "search",
+   "gists"
+  ],
+  "B": [
+   "search",
+   "gists",
+   "-p",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "d10-search",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "search",
+   "message"
+  ],
+  "B": [
+   "search",
+   "message",
+   "-p",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "d10-type",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "type",
+   "CreateMessageRequest"
+  ],
+  "B": [
+   "type",
+   "CreateMessageRequest",
+   "-p",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "d11-listing",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "Client"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/twilio:5.0.2",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "d11-fetchcall",
+  "A": [
+   "ballerinax/twilio:5.0.2",
+   "client",
+   "fetchCall"
+  ],
+  "B": [
+   "method",
+   "fetchCall",
+   "-p",
+   "ballerinax/twilio:5.0.2"
+  ]
+ },
+ {
+  "id": "d12-service",
+  "A": [
+   "ballerina/ftp:2.22.0",
+   "service",
+   "Service"
+  ],
+  "B": [
+   "service",
+   "Service",
+   "-p",
+   "ballerina/ftp:2.22.0"
+  ]
+ },
+ {
+  "id": "d12-listener",
+  "A": [
+   "ballerina/ftp:2.22.0",
+   "type",
+   "Listener"
+  ],
+  "B": [
+   "type",
+   "Listener",
+   "-p",
+   "ballerina/ftp:2.22.0"
+  ]
+ },
+ {
+  "id": "d13-batch",
+  "A": [
+   "ballerinax/postgresql:1.19.1",
+   "client",
+   "Client",
+   "batchExecute"
+  ],
+  "B": [
+   "method",
+   "batchExecute",
+   "-p",
+   "ballerinax/postgresql:1.19.1",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "d16-s3-overview",
+  "A": [
+   "ballerinax/aws.s3"
+  ],
+  "B": [
+   "package",
+   "ballerinax/aws.s3"
+  ]
+ },
+ {
+  "id": "d16-s3-put",
+  "A": [
+   "ballerinax/aws.s3",
+   "client",
+   "putObject"
+  ],
+  "B": [
+   "method",
+   "putObject",
+   "-p",
+   "ballerinax/aws.s3"
+  ]
+ },
+ {
+  "id": "d16-s3-client",
+  "A": [
+   "ballerinax/aws.s3",
+   "client",
+   "Client"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/aws.s3",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "d17-module",
+  "A": [
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader"
+  ],
+  "B": [
+   "package",
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader"
+  ]
+ },
+ {
+  "id": "d17-class",
+  "A": [
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "class",
+   "DefaultDataLoader"
+  ],
+  "B": [
+   "class",
+   "DefaultDataLoader",
+   "-p",
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader"
+  ]
+ },
+ {
+  "id": "d17-init",
+  "A": [
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "class",
+   "DefaultDataLoader",
+   "init"
+  ],
+  "B": [
+   "method",
+   "init",
+   "-p",
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "--class",
+   "DefaultDataLoader"
+  ]
+ },
+ {
+  "id": "d17-type",
+  "A": [
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader",
+   "type",
+   "BatchLoadFunction"
+  ],
+  "B": [
+   "type",
+   "BatchLoadFunction",
+   "-p",
+   "ballerina/graphql:1.19.0",
+   "-m",
+   "dataloader"
+  ]
+ }
+]
