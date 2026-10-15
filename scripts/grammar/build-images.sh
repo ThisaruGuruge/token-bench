@@ -5,9 +5,9 @@
 #   build-images.sh arm <GA|GB> <worktree>    the base plus that worktree's freshly built bal discover
 #   build-images.sh fake                      the base with a fake claude, for the $0 end-to-end test
 #
-# The arm build refuses a dirty worktree, builds the bala with Gradle (no
-# publish: the host's ~/.ballerina is not touched by the install), and installs
-# it inside the image. It records the image in $GRAMMAR_DIR/images/<arm>.json.
+# The arm build refuses a dirty worktree and a bala older than its HEAD, uses
+# the worktree's built bala (BUILD_BALA=1 rebuilds it with Gradle, without
+# publishing), and installs it inside the image, never in the host's ~/.ballerina. It records the image in $GRAMMAR_DIR/images/<arm>.json.
 #
 # Environment: GRAMMAR_DIR (default ~/Projects/Ballerina/cli-improvements/benchmark/grammar),
 # BAL_VERSION (default 2201.14.0), CLAUDE_CODE_VERSION (default: the host's claude --version).
@@ -56,9 +56,16 @@ build_arm() {
   local branch commit
   branch="$(git -C "$worktree" branch --show-current)"
   commit="$(git -C "$worktree" rev-parse HEAD)"
-  rm -f "$worktree/$BALA_RELATIVE"
-  (cd "$worktree" && ./gradlew :bal-tool:build -x test --rerun-tasks --no-build-cache -q)
-  [[ -s "$worktree/$BALA_RELATIVE" ]] || { echo "no bala at $worktree/$BALA_RELATIVE" >&2; exit 1; }
+  if [[ "${BUILD_BALA:-0}" == "1" ]]; then
+    rm -f "$worktree/$BALA_RELATIVE"
+    (cd "$worktree" && ./gradlew :bal-tool:build -x test --rerun-tasks --no-build-cache -q)
+  fi
+  [[ -s "$worktree/$BALA_RELATIVE" ]] || { echo "no bala at $worktree/$BALA_RELATIVE (BUILD_BALA=1 builds it)" >&2; exit 1; }
+  # A bala older than HEAD's commit cannot have been built from it.
+  if (( $(stat -f %m "$worktree/$BALA_RELATIVE") < $(git -C "$worktree" log -1 --format=%ct) )); then
+    echo "the bala is older than HEAD ($commit); rebuild it (BUILD_BALA=1)" >&2
+    exit 2
+  fi
   cp "$worktree/$BALA_RELATIVE" "$context/tool_discover.bala"
   local sha
   sha="$(shasum -a 256 "$context/tool_discover.bala" | awk '{print $1}')"
