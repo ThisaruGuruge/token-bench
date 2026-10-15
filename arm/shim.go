@@ -317,16 +317,20 @@ func InspectImage(run Runner, image string) (Image, error) {
 	return Image{ID: strings.TrimSpace(id), Platform: strings.TrimSpace(platform), Labels: kept}, nil
 }
 
+// versionSeparator splits the three outputs; `bal tool list` draws its table
+// with dashes, so it must not be one.
+const versionSeparator = "@@token-bench-version@@"
+
 // CaptureContainerVersions records the versions inside a container arm's
 // image, the same three CaptureVersions reads on the host.
 func CaptureContainerVersions(run Runner, image, platform string) Versions {
 	versions := Versions{Bal: "unavailable", Discover: "not installed", Claude: "unavailable"}
 	output, err := run("docker", "run", "--rm", "--platform", platform, "--entrypoint", "sh", image, "-c",
-		`bal version 2>/dev/null | head -n 1; echo '---'; bal tool list 2>/dev/null; echo '---'; claude --version 2>/dev/null`)
+		"bal version 2>/dev/null | head -n 1; echo "+versionSeparator+"; bal tool list 2>/dev/null; echo "+versionSeparator+"; claude --version 2>/dev/null")
 	if err != nil {
 		return versions
 	}
-	parts := strings.SplitN(output, "---", 3)
+	parts := strings.SplitN(output, versionSeparator, 3)
 	if len(parts) != 3 {
 		return versions
 	}

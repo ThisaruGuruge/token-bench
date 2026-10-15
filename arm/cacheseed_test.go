@@ -115,3 +115,11 @@ func TestContainerArmValidationAndRun(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCaptureContainerVersionsSurvivesTableBorders(t *testing.T) {
+	output := "Ballerina 2201.14.0 (Swan Lake Update 14)\n" + versionSeparator + "\n|TOOL ID |VERSION |\n|-------|-------|\n|discover |0.1.0 [repo = local] |\n" + versionSeparator + "\n2.1.299 (Claude Code)"
+	versions := CaptureContainerVersions(func(string, ...string) (string, error) { return output, nil }, "img", "linux/arm64")
+	if versions.Bal != "Ballerina 2201.14.0 (Swan Lake Update 14)" || versions.Discover != "0.1.0 [repo = local]" || versions.Claude != "2.1.299 (Claude Code)" {
+		t.Fatalf("%+v", versions)
+	}
+}
