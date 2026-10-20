@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -235,6 +237,13 @@ func run(arguments []string) (exitCode int) {
 		}
 		runHarnessConfig := harnessConfig
 		runEnv.configure(&runHarnessConfig, setup.arm, setup.platform())
+		taskNetwork, taskImage, err := runNetwork(taskDefinition, runHarnessConfig)
+		if err != nil {
+			_ = runEnv.cleanup()
+			_ = display.Close()
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
 		harnessConstructor, err := selectHarness(configuration.harness, runHarnessConfig)
 		if err != nil {
 			_ = runEnv.cleanup()
@@ -254,7 +263,7 @@ func run(arguments []string) (exitCode int) {
 			RequestedRuns:  configuration.requestedRuns,
 			Environment:    setup.environment(configuration, harnessConfig),
 		}
-		current = executeRun(current, directory, taskDefinition, languageImplementation, harnessConstructor, traceProvider)
+		current = executeRun(current, directory, taskDefinition.WithRun(taskNetwork, taskImage), languageImplementation, harnessConstructor, traceProvider)
 		if err := runEnv.collect(&current, directory, taskDefinition, setup.arm); err != nil {
 			current.Error = joinErrors(current.Error, err.Error())
 		}
@@ -396,6 +405,23 @@ func executeRun(current runResult, directory string, definition task.Task, imple
 			return agentFailure(result, err)
 		}
 	}
+}
+
+// runNetwork names the per-run docker network of a task that asks for one and
+// points the run's container at it; it returns the network and the image.
+func runNetwork(definition task.Task, config harness.Config) (string, string, error) {
+	if !definition.Network {
+		return "", "", nil
+	}
+	if config.Container == nil {
+		return "", "", fmt.Errorf("task %s runs only in a container arm", definition.Name)
+	}
+	suffix := make([]byte, 6)
+	if _, err := rand.Read(suffix); err != nil {
+		return "", "", err
+	}
+	config.Container.Network = "tb-net-" + hex.EncodeToString(suffix)
+	return config.Container.Network, config.Container.Image, nil
 }
 
 // finishAgent collects the agent's usage and artifacts after a run; deferred so

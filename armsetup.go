@@ -131,11 +131,12 @@ func (r armRun) configure(config *harness.Config, resolved *arm.Resolved, platfo
 	}
 	config.Env = nil
 	config.Container = &harness.Container{
-		Image:    r.env.Container.Image,
-		Platform: platform,
-		Mounts:   []string{r.env.Container.BenchDir + ":" + arm.BenchMount},
-		Env:      r.env.Env,
-		WorkDir:  arm.WorkMount,
+		PluginDir: resolved.Container.PluginDir,
+		Image:     r.env.Container.Image,
+		Platform:  platform,
+		Mounts:    []string{r.env.Container.BenchDir + ":" + arm.BenchMount},
+		Env:       r.env.Env,
+		WorkDir:   arm.WorkMount,
 	}
 }
 

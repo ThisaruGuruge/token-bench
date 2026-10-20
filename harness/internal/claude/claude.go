@@ -466,6 +466,9 @@ func (c *claude) startArguments() []string {
 	if c.config.PluginDir != "" {
 		arguments = append(arguments, "--plugin-dir", c.config.PluginDir)
 	}
+	if c.config.Container != nil && c.config.Container.PluginDir != "" {
+		arguments = append(arguments, "--plugin-dir", c.config.Container.PluginDir)
+	}
 	if c.config.APIKeyHelper != "" {
 		helper := c.config.APIKeyHelper
 		if c.config.Container != nil {

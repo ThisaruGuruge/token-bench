@@ -25,11 +25,11 @@ func TestCommittedArmsLoadAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(ids, ",") != "A,B,C,D,E,GA,GB" {
+	if strings.Join(ids, ",") != "A,B,C,D,E,GA,GAI,GB,GBI" {
 		t.Fatalf("unexpected arms %v", ids)
 	}
 	want := map[string]struct{ discover, plugin bool }{
-		"A": {false, false}, "B": {false, false}, "C": {true, false}, "D": {true, false}, "E": {false, true}, "GA": {true, false}, "GB": {true, false},
+		"A": {false, false}, "B": {false, false}, "C": {true, false}, "D": {true, false}, "E": {false, true}, "GA": {true, false}, "GB": {true, false}, "GAI": {true, false}, "GBI": {true, false},
 	}
 	for _, id := range ids {
 		config, err := Load(dir, id)

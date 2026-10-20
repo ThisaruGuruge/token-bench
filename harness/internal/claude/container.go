@@ -26,6 +26,10 @@ type Container struct {
 	Env []string
 	// WorkDir is the agent's working directory inside the container.
 	WorkDir string
+	// Network is a docker network to join instead of the default bridge.
+	Network string
+	// PluginDir is a plugin directory inside the image, passed as --plugin-dir.
+	PluginDir string
 }
 
 const (
@@ -57,6 +61,9 @@ func (c Container) dockerArguments(name, hostWorkDir string) []string {
 	}
 	if c.Platform != "" {
 		arguments = append(arguments, "--platform", c.Platform)
+	}
+	if c.Network != "" {
+		arguments = append(arguments, "--network", c.Network)
 	}
 	for _, mount := range c.Mounts {
 		arguments = append(arguments, "-v", mount)

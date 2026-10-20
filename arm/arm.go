@@ -62,6 +62,8 @@ type Config struct {
 // Container is the image a container arm runs in.
 type Container struct {
 	Image string `json:"image"`
+	// PluginDir is a Claude Code plugin directory inside the image.
+	PluginDir string `json:"pluginDir,omitempty"`
 }
 
 // Validate checks the definition's internal consistency.
