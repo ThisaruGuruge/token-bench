@@ -847,5 +847,497 @@
    "-m",
    "dataloader"
   ]
+ },
+ {
+  "id": "p-d19-gmail-send",
+  "A": [
+   "ballerinax/googleapis.gmail:4.2.1",
+   "client",
+   "Client",
+   "users/:userId/messages/send",
+   "post"
+  ],
+  "B": [
+   "resource",
+   "users/:userId/messages/send",
+   "post",
+   "-p",
+   "ballerinax/googleapis.gmail:4.2.1",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "p-d19-attachment-type",
+  "A": [
+   "ballerinax/googleapis.gmail:4.2.1",
+   "type",
+   "AttachmentFile"
+  ],
+  "B": [
+   "type",
+   "AttachmentFile",
+   "-p",
+   "ballerinax/googleapis.gmail:4.2.1"
+  ]
+ },
+ {
+  "id": "p-d20-slack-handler",
+  "A": [
+   "ballerinax/trigger.slack:0.9.0",
+   "service",
+   "MessageService",
+   "onMessageChannels"
+  ],
+  "B": [
+   "method",
+   "onMessageChannels",
+   "-p",
+   "ballerinax/trigger.slack:0.9.0",
+   "--service",
+   "MessageService"
+  ]
+ },
+ {
+  "id": "p-d20-listener-config",
+  "A": [
+   "ballerinax/trigger.slack:0.9.0",
+   "type",
+   "ListenerConfig"
+  ],
+  "B": [
+   "type",
+   "ListenerConfig",
+   "-p",
+   "ballerinax/trigger.slack:0.9.0"
+  ]
+ },
+ {
+  "id": "p-d20-slack-post",
+  "A": [
+   "ballerinax/slack:5.0.1",
+   "client",
+   "Client",
+   "chat.postMessage",
+   "post"
+  ],
+  "B": [
+   "resource",
+   "chat.postMessage",
+   "post",
+   "-p",
+   "ballerinax/slack:5.0.1",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "p-d21-consumer-close",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Consumer",
+   "close"
+  ],
+  "B": [
+   "method",
+   "close",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Consumer"
+  ]
+ },
+ {
+  "id": "p-d22-submodule-function",
+  "A": [
+   "ballerina/ai:1.16.0",
+   "-m",
+   "observe",
+   "funcs",
+   "createChatSpan"
+  ],
+  "B": [
+   "function",
+   "createChatSpan",
+   "-p",
+   "ballerina/ai:1.16.0",
+   "-m",
+   "observe"
+  ]
+ },
+ {
+  "id": "p-d22-submodule-class",
+  "A": [
+   "ballerina/ai:1.16.0",
+   "-m",
+   "observe",
+   "class",
+   "ChatSpan"
+  ],
+  "B": [
+   "class",
+   "ChatSpan",
+   "-p",
+   "ballerina/ai:1.16.0",
+   "-m",
+   "observe"
+  ]
+ },
+ {
+  "id": "p-d23-pulls",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "client",
+   "Client",
+   "repos/:owner/:repo/pulls",
+   "post"
+  ],
+  "B": [
+   "resource",
+   "repos/:owner/:repo/pulls",
+   "post",
+   "-p",
+   "ballerinax/github:6.1.0",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "p-d24-get-collection",
+  "A": [
+   "ballerinax/mongodb:5.2.4",
+   "client",
+   "Database",
+   "getCollection"
+  ],
+  "B": [
+   "method",
+   "getCollection",
+   "-p",
+   "ballerinax/mongodb:5.2.4",
+   "--client",
+   "Database"
+  ]
+ },
+ {
+  "id": "p-d24-find",
+  "A": [
+   "ballerinax/mongodb:5.2.4",
+   "client",
+   "Collection",
+   "find"
+  ],
+  "B": [
+   "method",
+   "find",
+   "-p",
+   "ballerinax/mongodb:5.2.4",
+   "--client",
+   "Collection"
+  ]
+ },
+ {
+  "id": "overview-gmail",
+  "A": [
+   "ballerinax/googleapis.gmail:4.2.1"
+  ],
+  "B": [
+   "package",
+   "ballerinax/googleapis.gmail:4.2.1"
+  ]
+ },
+ {
+  "id": "overview-slack",
+  "A": [
+   "ballerinax/slack:5.0.1"
+  ],
+  "B": [
+   "package",
+   "ballerinax/slack:5.0.1"
+  ]
+ },
+ {
+  "id": "overview-trigger.slack",
+  "A": [
+   "ballerinax/trigger.slack:0.9.0"
+  ],
+  "B": [
+   "package",
+   "ballerinax/trigger.slack:0.9.0"
+  ]
+ },
+ {
+  "id": "overview-ai",
+  "A": [
+   "ballerina/ai:1.16.0"
+  ],
+  "B": [
+   "package",
+   "ballerina/ai:1.16.0"
+  ]
+ },
+ {
+  "id": "overview-mongodb",
+  "A": [
+   "ballerinax/mongodb:5.2.4"
+  ],
+  "B": [
+   "package",
+   "ballerinax/mongodb:5.2.4"
+  ]
+ },
+ {
+  "id": "d22-module",
+  "A": [
+   "ballerina/ai:1.16.0",
+   "-m",
+   "observe"
+  ],
+  "B": [
+   "package",
+   "ballerina/ai:1.16.0",
+   "-m",
+   "observe"
+  ]
+ },
+ {
+  "id": "d20-service",
+  "A": [
+   "ballerinax/trigger.slack:0.9.0",
+   "service",
+   "MessageService"
+  ],
+  "B": [
+   "service",
+   "MessageService",
+   "-p",
+   "ballerinax/trigger.slack:0.9.0"
+  ]
+ },
+ {
+  "id": "d24-client",
+  "A": [
+   "ballerinax/mongodb:5.2.4",
+   "client",
+   "Client"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/mongodb:5.2.4",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "d24-database",
+  "A": [
+   "ballerinax/mongodb:5.2.4",
+   "client",
+   "Database"
+  ],
+  "B": [
+   "method",
+   "-p",
+   "ballerinax/mongodb:5.2.4",
+   "--client",
+   "Database"
+  ]
+ },
+ {
+  "id": "d19-message-request",
+  "A": [
+   "ballerinax/googleapis.gmail:4.2.1",
+   "type",
+   "MessageRequest"
+  ],
+  "B": [
+   "type",
+   "MessageRequest",
+   "-p",
+   "ballerinax/googleapis.gmail:4.2.1"
+  ]
+ },
+ {
+  "id": "d23-body",
+  "A": [
+   "ballerinax/github:6.1.0",
+   "type",
+   "RepoPullsBody"
+  ],
+  "B": [
+   "type",
+   "RepoPullsBody",
+   "-p",
+   "ballerinax/github:6.1.0"
+  ]
+ },
+ {
+  "id": "d21-producer-gtp",
+  "A": [
+   "ballerinax/kafka:4.6.6",
+   "client",
+   "Producer",
+   "getTopicPartitions"
+  ],
+  "B": [
+   "method",
+   "getTopicPartitions",
+   "-p",
+   "ballerinax/kafka:4.6.6",
+   "--client",
+   "Producer"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/kafka",
+  "A": [
+   "ballerinax/kafka"
+  ],
+  "B": [
+   "package",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "latest-ballerina/http",
+  "A": [
+   "ballerina/http"
+  ],
+  "B": [
+   "package",
+   "ballerina/http"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/github",
+  "A": [
+   "ballerinax/github"
+  ],
+  "B": [
+   "package",
+   "ballerinax/github"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/twilio",
+  "A": [
+   "ballerinax/twilio"
+  ],
+  "B": [
+   "package",
+   "ballerinax/twilio"
+  ]
+ },
+ {
+  "id": "latest-ballerina/ftp",
+  "A": [
+   "ballerina/ftp"
+  ],
+  "B": [
+   "package",
+   "ballerina/ftp"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/postgresql",
+  "A": [
+   "ballerinax/postgresql"
+  ],
+  "B": [
+   "package",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "latest-ballerina/sql",
+  "A": [
+   "ballerina/sql"
+  ],
+  "B": [
+   "package",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "latest-ballerina/graphql",
+  "A": [
+   "ballerina/graphql"
+  ],
+  "B": [
+   "package",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "latest-ballerina/io",
+  "A": [
+   "ballerina/io"
+  ],
+  "B": [
+   "package",
+   "ballerina/io"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/aws.s3",
+  "A": [
+   "ballerinax/aws.s3"
+  ],
+  "B": [
+   "package",
+   "ballerinax/aws.s3"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/googleapis.gmail",
+  "A": [
+   "ballerinax/googleapis.gmail"
+  ],
+  "B": [
+   "package",
+   "ballerinax/googleapis.gmail"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/slack",
+  "A": [
+   "ballerinax/slack"
+  ],
+  "B": [
+   "package",
+   "ballerinax/slack"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/trigger.slack",
+  "A": [
+   "ballerinax/trigger.slack"
+  ],
+  "B": [
+   "package",
+   "ballerinax/trigger.slack"
+  ]
+ },
+ {
+  "id": "latest-ballerina/ai",
+  "A": [
+   "ballerina/ai"
+  ],
+  "B": [
+   "package",
+   "ballerina/ai"
+  ]
+ },
+ {
+  "id": "latest-ballerinax/mongodb",
+  "A": [
+   "ballerinax/mongodb"
+  ],
+  "B": [
+   "package",
+   "ballerinax/mongodb"
+  ]
  }
 ]
