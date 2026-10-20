@@ -109,7 +109,7 @@
     "maxBudgetUsd": 3
   },
   "g2-sonnet": {
-    "description": "Grammar benchmark G2: Sonnet main, 18 question tasks x GA/GB x 6 (cap $3). Not approved yet.",
+    "description": "Grammar benchmark G2: Sonnet, 24 question tasks x GA/GB x 6 (cap $3).",
     "arms": [
       "GA",
       "GB"
@@ -132,14 +132,20 @@
       "dq-D15",
       "dq-D16",
       "dq-D17",
-      "dq-D18"
+      "dq-D18",
+      "dq-D19",
+      "dq-D20",
+      "dq-D21",
+      "dq-D22",
+      "dq-D23",
+      "dq-D24"
     ],
     "runs": 6,
     "model": "sonnet",
     "maxBudgetUsd": 3
   },
   "g3-haiku": {
-    "description": "Grammar benchmark G3: Haiku, 18 question tasks x GA/GB x 6 (cap $1). Not approved yet.",
+    "description": "Grammar benchmark G3: Haiku, 24 question tasks x GA/GB x 6 (cap $1).",
     "arms": [
       "GA",
       "GB"
@@ -162,14 +168,20 @@
       "dq-D15",
       "dq-D16",
       "dq-D17",
-      "dq-D18"
+      "dq-D18",
+      "dq-D19",
+      "dq-D20",
+      "dq-D21",
+      "dq-D22",
+      "dq-D23",
+      "dq-D24"
     ],
     "runs": 6,
     "model": "haiku",
     "maxBudgetUsd": 1
   },
   "g4-opus": {
-    "description": "Grammar benchmark G4: Opus confirmation, 18 question tasks x GA/GB x 3 (cap $5). Not approved yet.",
+    "description": "Grammar benchmark G4: Opus, 24 question tasks x GA/GB x 3 (cap $5).",
     "arms": [
       "GA",
       "GB"
@@ -192,7 +204,13 @@
       "dq-D15",
       "dq-D16",
       "dq-D17",
-      "dq-D18"
+      "dq-D18",
+      "dq-D19",
+      "dq-D20",
+      "dq-D21",
+      "dq-D22",
+      "dq-D23",
+      "dq-D24"
     ],
     "runs": 3,
     "model": "opus",
