@@ -1,0 +1,529 @@
+[
+ {
+  "id": "int-overview-hubspot.crm.obj.contacts",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts"
+  ],
+  "B": [
+   "package",
+   "ballerinax/hubspot.crm.obj.contacts"
+  ]
+ },
+ {
+  "id": "int-types-hubspot.crm.obj.contacts",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/hubspot.crm.obj.contacts"
+  ]
+ },
+ {
+  "id": "int-clients-hubspot.crm.obj.contacts",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/hubspot.crm.obj.contacts"
+  ]
+ },
+ {
+  "id": "int-readme-hubspot.crm.obj.contacts",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/hubspot.crm.obj.contacts"
+  ]
+ },
+ {
+  "id": "int-overview-googleapis.gmail",
+  "A": [
+   "ballerinax/googleapis.gmail"
+  ],
+  "B": [
+   "package",
+   "ballerinax/googleapis.gmail"
+  ]
+ },
+ {
+  "id": "int-types-googleapis.gmail",
+  "A": [
+   "ballerinax/googleapis.gmail",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/googleapis.gmail"
+  ]
+ },
+ {
+  "id": "int-clients-googleapis.gmail",
+  "A": [
+   "ballerinax/googleapis.gmail",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/googleapis.gmail"
+  ]
+ },
+ {
+  "id": "int-readme-googleapis.gmail",
+  "A": [
+   "ballerinax/googleapis.gmail",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/googleapis.gmail"
+  ]
+ },
+ {
+  "id": "int-overview-ai.openai",
+  "A": [
+   "ballerinax/ai.openai"
+  ],
+  "B": [
+   "package",
+   "ballerinax/ai.openai"
+  ]
+ },
+ {
+  "id": "int-types-ai.openai",
+  "A": [
+   "ballerinax/ai.openai",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/ai.openai"
+  ]
+ },
+ {
+  "id": "int-clients-ai.openai",
+  "A": [
+   "ballerinax/ai.openai",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/ai.openai"
+  ]
+ },
+ {
+  "id": "int-readme-ai.openai",
+  "A": [
+   "ballerinax/ai.openai",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/ai.openai"
+  ]
+ },
+ {
+  "id": "int-overview-ai",
+  "A": [
+   "ballerina/ai"
+  ],
+  "B": [
+   "package",
+   "ballerina/ai"
+  ]
+ },
+ {
+  "id": "int-types-ai",
+  "A": [
+   "ballerina/ai",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerina/ai"
+  ]
+ },
+ {
+  "id": "int-clients-ai",
+  "A": [
+   "ballerina/ai",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerina/ai"
+  ]
+ },
+ {
+  "id": "int-readme-ai",
+  "A": [
+   "ballerina/ai",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/ai"
+  ]
+ },
+ {
+  "id": "int-overview-kafka",
+  "A": [
+   "ballerinax/kafka"
+  ],
+  "B": [
+   "package",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "int-types-kafka",
+  "A": [
+   "ballerinax/kafka",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "int-clients-kafka",
+  "A": [
+   "ballerinax/kafka",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "int-readme-kafka",
+  "A": [
+   "ballerinax/kafka",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "int-overview-http",
+  "A": [
+   "ballerina/http"
+  ],
+  "B": [
+   "package",
+   "ballerina/http"
+  ]
+ },
+ {
+  "id": "int-types-http",
+  "A": [
+   "ballerina/http",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerina/http"
+  ]
+ },
+ {
+  "id": "int-clients-http",
+  "A": [
+   "ballerina/http",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerina/http"
+  ]
+ },
+ {
+  "id": "int-readme-http",
+  "A": [
+   "ballerina/http",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/http"
+  ]
+ },
+ {
+  "id": "int-hubspot-search",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts",
+   "client",
+   "Client",
+   "search",
+   "post"
+  ],
+  "B": [
+   "resource",
+   "search",
+   "post",
+   "-p",
+   "ballerinax/hubspot.crm.obj.contacts",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "int-hubspot-create",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts",
+   "client",
+   "Client",
+   ".",
+   "post"
+  ],
+  "B": [
+   "resource",
+   ".",
+   "post",
+   "-p",
+   "ballerinax/hubspot.crm.obj.contacts",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "int-hubspot-patch",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts",
+   "client",
+   "Client",
+   ":contactId",
+   "patch"
+  ],
+  "B": [
+   "resource",
+   ":contactId",
+   "patch",
+   "-p",
+   "ballerinax/hubspot.crm.obj.contacts",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "int-hubspot-init",
+  "A": [
+   "ballerinax/hubspot.crm.obj.contacts",
+   "client",
+   "Client",
+   "init"
+  ],
+  "B": [
+   "method",
+   "init",
+   "-p",
+   "ballerinax/hubspot.crm.obj.contacts",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "int-gmail-send",
+  "A": [
+   "ballerinax/googleapis.gmail",
+   "client",
+   "Client",
+   "users/:userId/messages/send",
+   "post"
+  ],
+  "B": [
+   "resource",
+   "users/:userId/messages/send",
+   "post",
+   "-p",
+   "ballerinax/googleapis.gmail",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "int-gmail-init",
+  "A": [
+   "ballerinax/googleapis.gmail",
+   "client",
+   "Client",
+   "init"
+  ],
+  "B": [
+   "method",
+   "init",
+   "-p",
+   "ballerinax/googleapis.gmail",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "int-openai-init",
+  "A": [
+   "ballerinax/ai.openai",
+   "client",
+   "ModelProvider",
+   "init"
+  ],
+  "B": [
+   "method",
+   "init",
+   "-p",
+   "ballerinax/ai.openai",
+   "--client",
+   "ModelProvider"
+  ]
+ },
+ {
+  "id": "int-openai-chat",
+  "A": [
+   "ballerinax/ai.openai",
+   "client",
+   "ModelProvider",
+   "chat"
+  ],
+  "B": [
+   "method",
+   "chat",
+   "-p",
+   "ballerinax/ai.openai",
+   "--client",
+   "ModelProvider"
+  ]
+ },
+ {
+  "id": "int-openai-generate",
+  "A": [
+   "ballerinax/ai.openai",
+   "client",
+   "ModelProvider",
+   "generate"
+  ],
+  "B": [
+   "method",
+   "generate",
+   "-p",
+   "ballerinax/ai.openai",
+   "--client",
+   "ModelProvider"
+  ]
+ },
+ {
+  "id": "int-kafka-producer-send",
+  "A": [
+   "ballerinax/kafka",
+   "client",
+   "Producer",
+   "send"
+  ],
+  "B": [
+   "method",
+   "send",
+   "-p",
+   "ballerinax/kafka",
+   "--client",
+   "Producer"
+  ]
+ },
+ {
+  "id": "int-kafka-listener",
+  "A": [
+   "ballerinax/kafka",
+   "type",
+   "Listener"
+  ],
+  "B": [
+   "type",
+   "Listener",
+   "-p",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "int-kafka-service",
+  "A": [
+   "ballerinax/kafka",
+   "service",
+   "Service"
+  ],
+  "B": [
+   "service",
+   "Service",
+   "-p",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "int-kafka-consumer-config",
+  "A": [
+   "ballerinax/kafka",
+   "type",
+   "ConsumerConfiguration"
+  ],
+  "B": [
+   "type",
+   "ConsumerConfiguration",
+   "-p",
+   "ballerinax/kafka"
+  ]
+ },
+ {
+  "id": "int-http-client-get",
+  "A": [
+   "ballerina/http",
+   "client",
+   "Client",
+   "get"
+  ],
+  "B": [
+   "method",
+   "get",
+   "-p",
+   "ballerina/http",
+   "--client",
+   "Client"
+  ]
+ },
+ {
+  "id": "int-ai-chat-user",
+  "A": [
+   "ballerina/ai",
+   "type",
+   "ChatUserMessage"
+  ],
+  "B": [
+   "type",
+   "ChatUserMessage",
+   "-p",
+   "ballerina/ai"
+  ]
+ }
+]

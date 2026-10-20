@@ -8,8 +8,17 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GRAMMAR_DIR="${GRAMMAR_DIR:-$HOME/Projects/Ballerina/cli-improvements/benchmark/grammar}"
-seed="$GRAMMAR_DIR/cache-seed/bal-discover"
-out="$GRAMMAR_DIR/cache-seed/build-log"
+# SEED_NAME selects another seed directory (cache-seed-int for the integration
+# arms); EXTRA_COMMANDS adds a second commands file to the base list.
+seed_root="$GRAMMAR_DIR/${SEED_NAME:-cache-seed}"
+seed="$seed_root/bal-discover"
+out="$seed_root/build-log"
+commands="$HERE/seed-commands.json"
+if [[ -n "${EXTRA_COMMANDS:-}" ]]; then
+  commands="$seed_root/commands.json"
+  mkdir -p "$seed_root"
+  python3 -c 'import json,sys; json.dump(json.load(open(sys.argv[1]))+json.load(open(sys.argv[2])), open(sys.argv[3],"w"))' "$HERE/seed-commands.json" "$EXTRA_COMMANDS" "$commands"
+fi
 rm -rf "$seed" "$out"
 mkdir -p "$seed" "$out"
 chmod 777 "$seed" "$out"
@@ -17,8 +26,8 @@ for arm in GA GB; do
   grammar="${arm#G}"
   platform="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "token-bench-discover:$arm")"
   docker run --rm --platform "$platform" --entrypoint node \
-    -v "$HERE:/s:ro" -v "$seed:/seed" -v "$out:/out" -e BAL_DISCOVER_CACHE_DIR=/seed \
-    "token-bench-discover:$arm" /s/run-commands.js /s/seed-commands.json "$grammar" /out
+    -v "$HERE:/s:ro" -v "$(dirname "$commands"):/c:ro" -v "$seed:/seed" -v "$out:/out" -e BAL_DISCOVER_CACHE_DIR=/seed \
+    "token-bench-discover:$arm" /s/run-commands.js "/c/$(basename "$commands")" "$grammar" /out
 done
 python3 - "$out" <<'PY'
 import json, sys

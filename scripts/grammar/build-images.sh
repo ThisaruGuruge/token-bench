@@ -96,8 +96,43 @@ EOF
   docker build --platform "linux/$GOARCH" -t token-bench-discover:fake "$context"
 }
 
+build_mock() {
+  (cd "$ROOT" && GOOS=linux GOARCH="$GOARCH" CGO_ENABLED=0 go build -trimpath -o "$context/mockserver" ./task/internal/leadrouting/mockserver)
+  docker build --platform "linux/$GOARCH" -f "$ROOT/docker/integration/Dockerfile.mock" -t token-bench-mock:latest "$context"
+}
+
+# build_int stages the skill (patched as for the arms) and a throwaway project
+# importing the scenario's libraries, so `bal build` pre-pulls them.
+build_int() {
+  local arm="$1"
+  local skills_repo="${TOKEN_BENCH_SKILLS_REPO:-$HOME/Projects/Ballerina/cli-improvements/benchmark/reference/ballerina-skills}"
+  mkdir -p "$context/stage/skills" "$context/bench-plugin/.claude-plugin" "$context/prepull"
+  cp -R "$skills_repo/skills/ballerina" "$context/stage/skills/"
+  patch -p1 --no-backup-if-mismatch -d "$context/stage" < "$ROOT/arms/patches/ballerina-skill-discover-neutral.patch" >/dev/null
+  mkdir -p "$context/bench-plugin/skills"
+  cp -R "$context/stage/skills/ballerina" "$context/bench-plugin/skills/"
+  printf '{"name":"ballerina","version":"1.0.0","description":"Ballerina skill (grammar-neutral bal discover patch)","author":{"name":"token-bench"}}\n' > "$context/bench-plugin/.claude-plugin/plugin.json"
+  cp "$ROOT/task/internal/leadrouting/prepull/Ballerina.toml" "$ROOT/task/internal/leadrouting/prepull/main.bal" "$context/prepull/"
+  docker build --platform "linux/$GOARCH" -f "$ROOT/docker/integration/Dockerfile.int" \
+    --build-arg "ARM_IMAGE=token-bench-discover:$arm" -t "token-bench-discover:$arm-int" "$context"
+}
+
+# build_fake_int is the GA integration image with a fake claude that copies
+# the reference solution in, for the $0 integration end-to-end.
+build_fake_int() {
+  cp "$ROOT/scripts/grammar/fake-claude-int.sh" "$context/fake-claude.sh"
+  cp -R "$ROOT/task/internal/leadrouting/reference" "$context/reference"
+  printf '%s\n' "FROM token-bench-discover:GA-int" "USER root" "RUN rm -f /usr/local/bin/claude" \
+    "COPY fake-claude.sh /usr/local/bin/claude" "COPY --chown=node:node reference /opt/reference" \
+    "RUN chmod 755 /usr/local/bin/claude" "USER node" 'LABEL org.token-bench.arm="fake-int"' > "$context/Dockerfile"
+  docker build --platform "linux/$GOARCH" -t token-bench-discover:fake-int "$context"
+}
+
 case "${1:-}" in
   base) build_base ;;
+  fake-int) build_fake_int ;;
+  mock) build_mock ;;
+  int) [[ "${2:-}" =~ ^G[AB]$ ]] || { echo "usage: $0 int <GA|GB>" >&2; exit 2; }; build_int "$2" ;;
   arm) [[ $# -eq 3 ]] || { echo "usage: $0 arm <GA|GB> <worktree>" >&2; exit 2; }; build_arm "$2" "$3" ;;
   fake) build_fake ;;
   *) sed -n '2,13p' "$0"; exit 2 ;;

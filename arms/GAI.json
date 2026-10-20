@@ -1,0 +1,11 @@
+{
+  "id": "GAI",
+  "label": "discover grammar A, integration image with the neutral Ballerina skill",
+  "discoverVisible": true,
+  "systemPromptFile": "hints/discover-neutral.md",
+  "container": { "image": "token-bench-discover:GA-int", "pluginDir": "/opt/bench-plugin" },
+  "callLog": true,
+  "cacheSeed": "~/Projects/Ballerina/cli-improvements/benchmark/grammar/cache-seed-int/bal-discover",
+  "disallowedTools": ["WebSearch", "WebFetch"],
+  "grammar": "A"
+}
