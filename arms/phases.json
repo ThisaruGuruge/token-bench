@@ -215,5 +215,44 @@
     "runs": 3,
     "model": "opus",
     "maxBudgetUsd": 5
+  },
+  "gi-measure": {
+    "description": "Integration scenario lead-routing: one measuring run per arm on Sonnet (cap $12).",
+    "arms": [
+      "GAI",
+      "GBI"
+    ],
+    "scenarios": [
+      "lead-routing"
+    ],
+    "runs": 1,
+    "model": "sonnet",
+    "maxBudgetUsd": 12
+  },
+  "gi-sonnet": {
+    "description": "Integration scenario lead-routing: Sonnet x 2 arms x 4 (cap set from the measured run).",
+    "arms": [
+      "GAI",
+      "GBI"
+    ],
+    "scenarios": [
+      "lead-routing"
+    ],
+    "runs": 4,
+    "model": "sonnet",
+    "maxBudgetUsd": 12
+  },
+  "gi-opus": {
+    "description": "Integration scenario lead-routing: Opus x 2 arms x 2 (cap set from the measured run).",
+    "arms": [
+      "GAI",
+      "GBI"
+    ],
+    "scenarios": [
+      "lead-routing"
+    ],
+    "runs": 2,
+    "model": "opus",
+    "maxBudgetUsd": 20
   }
 }
