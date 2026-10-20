@@ -25,6 +25,9 @@ type (
 		// FirstCommands lists, per discover grammar, the argv (after `bal
 		// discover`) of an on-target first command; answer tasks only.
 		FirstCommands map[string][][]string
+		// Network asks for a per-run docker network that the task's sidecars
+		// and the agent's container join; container arms only.
+		Network bool
 	}
 	TaskHandle interface {
 		Setup() (func() error, error) // Use Setup for setting things such as mock backend servers
@@ -44,6 +47,11 @@ type (
 		Ports []int
 		// WorkDir is the agent's working directory.
 		WorkDir string
+		// Network is the per-run docker network of a Network task.
+		Network string
+		// Image is the container arm's image, for tasks that run the agent's
+		// program in it.
+		Image string
 	}
 )
 
@@ -158,4 +166,18 @@ func NewScatterGather() Task {
 
 func (a AllocResources) Cleanup() {
 	// TODO: implement this
+}
+
+// WithRun returns the task with a run's network and container image passed to
+// its InitFn.
+func (t Task) WithRun(network, image string) Task {
+	if network == "" && image == "" {
+		return t
+	}
+	initialize := t.InitFn
+	t.InitFn = func(resources AllocResources) TaskHandle {
+		resources.Network, resources.Image = network, image
+		return initialize(resources)
+	}
+	return t
 }

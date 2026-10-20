@@ -37,7 +37,7 @@ func DiscoverQAPilot() []string {
 func ServiceTasks() []Task {
 	return []Task{
 		NewCheckoutSync(), NewClaimCheck(), NewContentBasedRouter(), NewContentEnricher(),
-		NewDeadLetterChannel(), NewMultiConsumer(), NewScatterGather(),
+		NewDeadLetterChannel(), NewMultiConsumer(), NewScatterGather(), NewLeadRouting(),
 	}
 }
 
