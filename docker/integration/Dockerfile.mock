@@ -1,0 +1,4 @@
+FROM alpine:3
+COPY mockserver /usr/local/bin/mockserver
+USER 65534
+ENTRYPOINT ["/usr/local/bin/mockserver"]
