@@ -74,10 +74,11 @@ func normalizeName(value string) string {
 	return strings.TrimPrefix(text, "'")
 }
 
-// normalizePath canonicalises a resource path: leading '/' and quotes
-// dropped, every path parameter spelled `:name`.
+// normalizePath canonicalises a resource path: leading '/', quotes and
+// backslash escapes (chat\.postMessage) dropped, every path parameter
+// spelled `:name`.
 func normalizePath(value string) string {
-	text := strings.Trim(strings.TrimSpace(value), "/")
+	text := strings.Trim(strings.ReplaceAll(strings.TrimSpace(value), `\`, ""), "/")
 	segments := strings.Split(text, "/")
 	for index, segment := range segments {
 		segment = strings.TrimSpace(segment)

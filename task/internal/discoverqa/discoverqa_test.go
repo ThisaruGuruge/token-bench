@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -53,7 +54,7 @@ func expectedDocument(definition Definition) map[string]any {
 	document := map[string]any{}
 	for _, field := range definition.Fields {
 		switch field.Kind {
-		case kindNames, kindTypes:
+		case kindNames, kindTypes, kindChain:
 			list := make([]any, len(field.Want))
 			for index, value := range field.Want {
 				list[index] = value
@@ -70,7 +71,8 @@ func expectedDocument(definition Definition) map[string]any {
 			}
 			document[field.Key] = params
 		case kindInt:
-			document[field.Key] = 199
+			number, _ := strconv.Atoi(field.Want[0])
+			document[field.Key] = number
 		default:
 			document[field.Key] = field.Want[0]
 		}
@@ -79,8 +81,8 @@ func expectedDocument(definition Definition) map[string]any {
 }
 
 func TestEveryTaskAcceptsItsExpectedAnswerAndRejectsAnEmptyOne(t *testing.T) {
-	if len(Tasks) != 18 {
-		t.Fatalf("want 18 tasks, got %d", len(Tasks))
+	if len(Tasks) != 24 {
+		t.Fatalf("want 24 tasks, got %d", len(Tasks))
 	}
 	for _, definition := range Tasks {
 		content, _ := json.Marshal(expectedDocument(definition))
@@ -164,5 +166,20 @@ func TestPilotIDsExist(t *testing.T) {
 		if _, ok := Lookup(id); !ok {
 			t.Errorf("pilot task %s missing", id)
 		}
+	}
+}
+
+func TestHardTaskSpellings(t *testing.T) {
+	d20, _ := Lookup("D20")
+	grade := d20.Grade([]byte(`{"listenerLibrary":"ballerinax/trigger.slack:0.9.0","senderLibrary":"ballerinax/slack","serviceType":"slack:MessageService","handler":"onMessageChannels","handlerParameterType":"slack:GenericEventWrapper","listenerConfigRequiredFields":["verificationToken"],"postAccessor":"post","postPath":"/chat\\.postMessage","postRequiredFields":["channel"]}`))
+	if !grade.Passed() {
+		t.Errorf("D20 equivalent spelling failed: %+v", grade)
+	}
+	d24, _ := Lookup("D24")
+	if d24.Grade([]byte(`{"callChain":["getCollection","getDatabase","find"],"findDeclaredBy":"Collection","firstParameterType":"map<json>","returnType":"stream<targetType, error?>|Error"}`)).Passed() {
+		t.Error("D24 chain out of order must fail")
+	}
+	if !d24.Grade([]byte(`{"callChain":["getDatabase","getCollection","find"],"findDeclaredBy":"mongodb:Collection","firstParameterType":"map<json>","returnType":"mongodb:Error|stream<targetType,error?>"}`)).Passed() {
+		t.Error("D24 equivalent spelling failed")
 	}
 }

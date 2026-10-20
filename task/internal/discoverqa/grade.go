@@ -77,7 +77,7 @@ func (f Field) expected() string {
 	switch f.Kind {
 	case kindNames:
 		return "{" + strings.Join(f.Want, ", ") + "}"
-	case kindTypes:
+	case kindTypes, kindChain:
 		return "[" + strings.Join(f.Want, ", ") + "]"
 	}
 	return strings.Join(f.Want, " or ")
@@ -88,6 +88,9 @@ func (f Field) matches(value any) bool {
 	case kindNames:
 		got, ok := stringList(value)
 		return ok && sameSet(mapAll(got, normalizeName), mapAll(f.Want, normalizeName))
+	case kindChain:
+		got, ok := stringList(value)
+		return ok && sameList(mapAll(got, normalizeName), mapAll(f.Want, normalizeName))
 	case kindTypes:
 		got, ok := stringList(value)
 		return ok && sameList(mapAll(got, normalizeType), mapAll(f.Want, normalizeType))

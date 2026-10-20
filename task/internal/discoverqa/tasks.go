@@ -12,6 +12,7 @@ const (
 	kindLibrary = "library" // an org/name coordinate
 	kindInt     = "int"     // a count
 	kindNames   = "names"   // a set of identifiers
+	kindChain   = "chain"   // an ordered list of identifiers
 	kindTypes   = "types"   // an ordered list of types
 	kindParams  = "params"  // an ordered list of {name, type[, default]}
 )
@@ -54,8 +55,8 @@ const Frame = "Answer the question below about a Ballerina library's API. Look i
 
 func one(values ...string) []string { return values }
 
-// Tasks are the 18 questions, in ID order. Versions are pinned except D16's,
-// which the cache seed pins.
+// Tasks are the 24 questions, in ID order. Versions are pinned except those of
+// D16, D19 and D20, which the cache seed pins through its latest-version entries.
 var Tasks = []Definition{
 	{
 		ID: "D01", Category: "API discovery",
@@ -313,7 +314,110 @@ var Tasks = []Definition{
 			"B": {{"function", "fileReadJson", "-p", "ballerina/io:1.8.2"}},
 		},
 	},
+	{
+		ID: "D19", Category: "Find by purpose + nested record",
+		Question: "Which library on Ballerina Central sends email through Gmail (give it as org/name)? With its client, how do you send an email message: give the HTTP accessor, the path (path parameters written as `:name`), the payload's type, the type that describes one attachment in that payload, that attachment type's required fields, and the return type.",
+		Shape:    `{"library": "<org>/<name>", "accessor": "<get|post|...>", "path": "<path>", "payloadType": "<type>", "attachmentType": "<type>", "attachmentRequiredFields": ["<field>", "..."], "returnType": "<type>"}`,
+		Fields: []Field{
+			{Key: "library", Kind: kindLibrary, Want: one("ballerinax/googleapis.gmail")},
+			{Key: "accessor", Kind: kindName, Want: one("post")},
+			{Key: "path", Kind: kindPath, Want: one("users/:userId/messages/send")},
+			{Key: "payloadType", Kind: kindType, Want: one("MessageRequest")},
+			{Key: "attachmentType", Kind: kindType, Want: one("AttachmentFile")},
+			{Key: "attachmentRequiredFields", Kind: kindNames, Want: one("mimeType", "name", "path")},
+			{Key: "returnType", Kind: kindType, Want: one("Message|error")},
+		},
+		FirstCommands: map[string][][]string{
+			"A": {{"search", "gmail"}, {"search", "gmail", "send"}, {"search", "gmail", "email"}, {"search", "email"}},
+			"B": {{"search", "gmail"}, {"search", "gmail", "send"}, {"search", "gmail", "email"}, {"search", "email"}},
+		},
+	},
+	{
+		ID: "D20", Category: "Listener + service + second library",
+		Question: "A Ballerina integration should copy every message posted in a public Slack channel into another Slack channel. Which Central library provides the listener that receives Slack events, and which one posts messages to Slack (org/name each)? Which service type and which handler receive a message posted in a public channel, and what is that handler's parameter type? Which field must the listener's configuration record have? To post the copy, give the HTTP accessor, the path, and the required field(s) of its payload.",
+		Shape:    `{"listenerLibrary": "<org>/<name>", "senderLibrary": "<org>/<name>", "serviceType": "<name>", "handler": "<name>", "handlerParameterType": "<type>", "listenerConfigRequiredFields": ["<field>", "..."], "postAccessor": "<get|post|...>", "postPath": "<path>", "postRequiredFields": ["<field>", "..."]}`,
+		Fields: []Field{
+			{Key: "listenerLibrary", Kind: kindLibrary, Want: one("ballerinax/trigger.slack")},
+			{Key: "senderLibrary", Kind: kindLibrary, Want: one("ballerinax/slack")},
+			{Key: "serviceType", Kind: kindType, Want: one("MessageService")},
+			{Key: "handler", Kind: kindName, Want: one("onMessageChannels")},
+			{Key: "handlerParameterType", Kind: kindType, Want: one("GenericEventWrapper")},
+			{Key: "listenerConfigRequiredFields", Kind: kindNames, Want: one("verificationToken")},
+			{Key: "postAccessor", Kind: kindName, Want: one("post")},
+			{Key: "postPath", Kind: kindPath, Want: one("chat.postMessage")},
+			{Key: "postRequiredFields", Kind: kindNames, Want: one("channel")},
+		},
+		FirstCommands: map[string][][]string{
+			"A": {{"search", "slack"}, {"search", "slack", "listener"}, {"search", "slack", "events"}, {"search", "slack", "message"}},
+			"B": {{"search", "slack"}, {"search", "slack", "listener"}, {"search", "slack", "events"}, {"search", "slack", "message"}},
+		},
+	},
+	{
+		ID: "D21", Category: "Two ambiguous names",
+		Question: "In ballerinax/kafka version 4.6.6, two operations exist on more than one client. For the consumer's `close`, give its parameters (name, type and default value) and its return type. For the producer's `getTopicPartitions`, give its parameters (name and type) and its return type.",
+		Shape:    `{"consumerCloseParameters": [{"name": "<name>", "type": "<type>", "default": "<default value, or omit the key>"}], "consumerCloseReturnType": "<type>", "producerGetTopicPartitionsParameters": [{"name": "<name>", "type": "<type>"}], "producerGetTopicPartitionsReturnType": "<type>"}`,
+		Fields: []Field{
+			{Key: "consumerCloseParameters", Kind: kindParams, Params: []Param{{Name: "duration", Type: "decimal", Default: "-1"}}},
+			{Key: "consumerCloseReturnType", Kind: kindType, Want: one("Error?")},
+			{Key: "producerGetTopicPartitionsParameters", Kind: kindParams, Params: []Param{{Name: "topic", Type: "string"}}},
+			{Key: "producerGetTopicPartitionsReturnType", Kind: kindType, Want: one("TopicPartition[]|Error")},
+		},
+		FirstCommands: map[string][][]string{
+			"A": {{"ballerinax/kafka:4.6.6", "client", "Consumer", "close"}, {"ballerinax/kafka:4.6.6", "client", "Producer", "getTopicPartitions"}},
+			"B": {{"method", "close", "-p", "ballerinax/kafka:4.6.6", "--client", "Consumer"}, {"method", "getTopicPartitions", "-p", "ballerinax/kafka:4.6.6", "--client", "Producer"}},
+		},
+	},
+	{
+		ID: "D22", Category: "Submodule without a hint",
+		Question: "ballerina/ai version 1.16.0 ships a separate module for tracing AI calls. What is that module's import path? Which call in that module creates a span for a chat request, what are its parameters (name and type) and its return type, and how many operations does the returned span object offer?",
+		Shape:    `{"importPath": "<org>/<module>", "operation": "<name>", "parameters": [{"name": "<name>", "type": "<type>"}], "returnType": "<type>", "spanOperationCount": 0}`,
+		Fields: []Field{
+			{Key: "importPath", Kind: kindLibrary, Want: one("ballerina/ai.observe")},
+			{Key: "operation", Kind: kindName, Want: one("createChatSpan")},
+			{Key: "parameters", Kind: kindParams, Params: []Param{{Name: "llmModel", Type: "string"}}},
+			{Key: "returnType", Kind: kindType, Want: one("ChatSpan")},
+			{Key: "spanOperationCount", Kind: kindInt, Want: one("14")},
+		},
+		FirstCommands: map[string][][]string{
+			"A": {{"ballerina/ai:1.16.0"}},
+			"B": {{"package", "ballerina/ai:1.16.0"}},
+		},
+	},
+	{
+		ID: "D23", Category: "Two path parameters + payload",
+		Question: "In ballerinax/github version 6.1.0, how do you open a pull request with the client? Give the HTTP accessor, the path (path parameters written as `:name`), the payload type, its required fields, and the return type.",
+		Shape:    `{"accessor": "<get|post|...>", "path": "<path>", "payloadType": "<type>", "requiredFields": ["<field>", "..."], "returnType": "<type>"}`,
+		Fields: []Field{
+			{Key: "accessor", Kind: kindName, Want: one("post")},
+			{Key: "path", Kind: kindPath, Want: one("repos/:owner/:repo/pulls")},
+			{Key: "payloadType", Kind: kindType, Want: one("RepoPullsBody")},
+			{Key: "requiredFields", Kind: kindNames, Want: one("head", "base")},
+			{Key: "returnType", Kind: kindType, Want: one("PullRequest|error")},
+		},
+		FirstCommands: map[string][][]string{
+			"A": {{"ballerinax/github:6.1.0", "search", "pulls"}, {"ballerinax/github:6.1.0", "search", "pull"}, {"ballerinax/github:6.1.0", "client", "Client", "repos/:owner/:repo/pulls", "post"}},
+			"B": {{"search", "pulls", "-p", "ballerinax/github:6.1.0"}, {"search", "pull", "-p", "ballerinax/github:6.1.0"}, {"resource", "repos/:owner/:repo/pulls", "post", "-p", "ballerinax/github:6.1.0", "--client", "Client"}},
+		},
+	},
+	{
+		ID: "D24", Category: "Wrong in two ways (call chain)",
+		Question: "A colleague's code `mongo->find(\"mydb\", \"users\", {})`, where `mongo` is a ballerinax/mongodb version 5.2.4 client, does not compile. Starting from that client, give the chain of calls (operation names, in order) that reaches the operation that finds documents, the name of the client type that declares that find operation, the type of its first parameter, and its return type.",
+		Shape:    `{"callChain": ["<operation>", "..."], "findDeclaredBy": "<type name>", "firstParameterType": "<type>", "returnType": "<type>"}`,
+		Fields: []Field{
+			{Key: "callChain", Kind: kindChain, Want: one("getDatabase", "getCollection", "find")},
+			{Key: "findDeclaredBy", Kind: kindType, Want: one("Collection")},
+			{Key: "firstParameterType", Kind: kindType, Want: one("map<json>")},
+			{Key: "returnType", Kind: kindType, Want: one("stream<targetType, error?>|Error")},
+		},
+		FirstCommands: map[string][][]string{
+			"A": {{"ballerinax/mongodb:5.2.4", "client", "Client"}, {"ballerinax/mongodb:5.2.4", "client"}, {"ballerinax/mongodb:5.2.4"}},
+			"B": {{"method", "-p", "ballerinax/mongodb:5.2.4", "--client", "Client"}, {"client", "-p", "ballerinax/mongodb:5.2.4"}, {"package", "ballerinax/mongodb:5.2.4"}},
+		},
+	},
 }
+
+// HardIDs are the multi-step tasks added after the pilot put D01-D18 at ceiling.
+var HardIDs = []string{"D19", "D20", "D21", "D22", "D23", "D24"}
 
 // PilotIDs is the 6-task pilot subset, one per behaviour.
 var PilotIDs = []string{"D02", "D03", "D08", "D10", "D13", "D17"}
