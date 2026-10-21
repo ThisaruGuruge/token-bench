@@ -148,7 +148,7 @@ func TestSummaryKeepsModelsAndMissingValuesApart(t *testing.T) {
 	if err := writeSummaryCSV(rows, &output); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "0/1,0.0,0.0,79.3,0,0,,,0.0") {
+	if !strings.Contains(output.String(), "0/1,0.0,,0.0,79.3,0,0,,,0.0") {
 		t.Errorf("empty cost and duration expected:\n%s", output.String())
 	}
 }

@@ -31,6 +31,9 @@ type SummaryRow struct {
 	HasCost               bool
 	MedianDurationSeconds float64
 	HasDuration           bool
+	// MeanPartial is the mean fraction of answer fields (or checks) correct.
+	MeanPartial float64
+	HasPartial  bool
 }
 
 // PassFraction renders "k/n".
@@ -108,7 +111,7 @@ func summarizeArms(discovered []discoveredResult) []SummaryRow {
 	for _, k := range keys {
 		runs := groups[k]
 		row := SummaryRow{Arm: k.arm, Scenario: k.scenario, Language: k.language, Model: k.model}
-		var tokens, corrections, costs, durations []float64
+		var tokens, corrections, costs, durations, partials []float64
 		for _, run := range runs {
 			if run.InfraFailure {
 				row.InfraFailures++
@@ -118,6 +121,9 @@ func summarizeArms(discovered []discoveredResult) []SummaryRow {
 			if run.Passed {
 				row.Passed++
 			}
+			if score, ok := partialScore(run); ok {
+				partials = append(partials, score)
+			}
 			tokens = append(tokens, float64(run.Tokens.Total))
 			corrections = append(corrections, float64(run.Corrections))
 			if cost, ok := runCost(run); ok {
@@ -126,6 +132,13 @@ func summarizeArms(discovered []discoveredResult) []SummaryRow {
 			if run.DurationSeconds > 0 {
 				durations = append(durations, run.DurationSeconds)
 			}
+		}
+		if len(partials) > 0 {
+			sum := 0.0
+			for _, score := range partials {
+				sum += score
+			}
+			row.MeanPartial, row.HasPartial = sum/float64(len(partials)), true
 		}
 		row.MedianTokens = medianOf(tokens)
 		row.MedianCorrections = medianOf(corrections)
@@ -157,6 +170,7 @@ var runColumns = []string{
 	"assistant_turns", "tool_calls", "bal_discover", "bal_search", "bal_pull", "bal_build", "bal_run",
 	"web_search", "web_fetch", "task_agent", "mcp", "ballerina_repo_reads",
 	"discover_visible", "bal_version", "bal_discover_version", "max_budget_usd", "error", "result_path",
+	"answer_correct", "answer_total", "partial_score",
 }
 
 func optionalFloat(value *float64) string {
@@ -220,6 +234,7 @@ func writeRunsCSV(discovered []discoveredResult, output io.Writer) error {
 			family(streamlog.FamilyWebSearch), family(streamlog.FamilyWebFetch), family(streamlog.FamilyAgent),
 			family(streamlog.FamilyMCP), family(streamlog.FamilyBalRepoRead),
 			visible, balVersion, discoverVersion, budget, run.Error, item.path,
+			answerCorrect(run), answerTotal(run), partialText(partialScore(run)),
 		}
 		if err := writer.Write(record); err != nil {
 			return err
@@ -230,12 +245,40 @@ func writeRunsCSV(discovered []discoveredResult, output io.Writer) error {
 }
 
 var summaryColumns = []string{
-	"arm", "scenario", "language", "model", "runs", "passed", "pass", "pass_rate_percent",
+	"arm", "scenario", "language", "model", "runs", "passed", "pass", "pass_rate_percent", "mean_partial_score",
 	"pass_rate_ci95_low_percent", "pass_rate_ci95_high_percent", "infra_failures",
 	"median_total_tokens", "median_cost_usd", "median_duration_seconds", "median_corrections",
 }
 
 // WriteSummaryCSV writes the arm x scenario summary.
+func partialScore(run result.Result) (float64, bool) {
+	if run.Answer == nil || run.Answer.Total == 0 {
+		return 0, false
+	}
+	return float64(run.Answer.Correct) / float64(run.Answer.Total), true
+}
+
+func partialText(value float64, ok bool) string {
+	if !ok {
+		return ""
+	}
+	return strconv.FormatFloat(value, 'f', 3, 64)
+}
+
+func answerCorrect(run result.Result) string {
+	if run.Answer == nil {
+		return ""
+	}
+	return strconv.Itoa(run.Answer.Correct)
+}
+
+func answerTotal(run result.Result) string {
+	if run.Answer == nil {
+		return ""
+	}
+	return strconv.Itoa(run.Answer.Total)
+}
+
 func WriteSummaryCSV(paths []string, output io.Writer) error {
 	discovered, err := discover(paths)
 	if err != nil {
@@ -260,7 +303,7 @@ func writeSummaryCSV(rows []SummaryRow, output io.Writer) error {
 		low, high := row.PassInterval()
 		record := []string{
 			row.Arm, row.Scenario, row.Language, row.Model, strconv.Itoa(row.Runs), strconv.Itoa(row.Passed), row.PassFraction(),
-			strconv.FormatFloat(row.PassRate(), 'f', 1, 64),
+			strconv.FormatFloat(row.PassRate(), 'f', 1, 64), partialText(row.MeanPartial, row.HasPartial),
 			strconv.FormatFloat(low, 'f', 1, 64), strconv.FormatFloat(high, 'f', 1, 64), strconv.Itoa(row.InfraFailures),
 			strconv.FormatFloat(row.MedianTokens, 'f', 0, 64), cost, duration,
 			strconv.FormatFloat(row.MedianCorrections, 'f', 1, 64),

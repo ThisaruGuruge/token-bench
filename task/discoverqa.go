@@ -1,6 +1,9 @@
 package task
 
-import "token-bench/task/internal/discoverqa"
+import (
+	"token-bench/task/answer"
+	"token-bench/task/internal/discoverqa"
+)
 
 // DiscoverQA returns the discovery-only question tasks (scenarios dq-D01 ..
 // dq-D18) of the grammar benchmark.
@@ -58,4 +61,15 @@ func Names() []string {
 		names = append(names, candidate.Name)
 	}
 	return names
+}
+
+// GradeAnswer grades answer.json content for the named question scenario
+// (dq-D01 ...); false when the scenario is not a question task.
+func GradeAnswer(scenario string, content []byte) (answer.Grade, bool) {
+	for _, definition := range discoverqa.Tasks {
+		if discoverqa.ScenarioName(definition.ID) == scenario {
+			return definition.Grade(content), true
+		}
+	}
+	return answer.Grade{}, false
 }
