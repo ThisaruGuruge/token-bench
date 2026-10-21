@@ -97,7 +97,7 @@ EOF
 }
 
 build_mock() {
-  (cd "$ROOT" && GOOS=linux GOARCH="$GOARCH" CGO_ENABLED=0 go build -trimpath -o "$context/mockserver" ./task/internal/leadrouting/mockserver)
+  (cd "$ROOT" && GOOS=linux GOARCH="$GOARCH" CGO_ENABLED=0 go build -trimpath -o "$context/mockserver" ./task/internal/intscenario/mockserver)
   docker build --platform "linux/$GOARCH" -f "$ROOT/docker/integration/Dockerfile.mock" -t token-bench-mock:latest "$context"
 }
 
