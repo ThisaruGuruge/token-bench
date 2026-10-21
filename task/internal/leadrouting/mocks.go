@@ -92,12 +92,29 @@ func EnrichHandler(recorder *Recorder) http.Handler {
 	return mux
 }
 
-// HotWords make the AI mock answer HOT; any other message is COLD.
+// The two lead messages the grader sends. The AI mock stands in for a perfect
+// classifier of the lead's message: whatever instruction the agent's program
+// wraps around it, a request containing a graded message is rated by that
+// message alone.
+const (
+	HotMessage  = "Can you send pricing for 50 seats?"
+	ColdMessage = "Just browsing your blog."
+)
+
+// HotWords rate any other message HOT when its last paragraph (the lead's
+// message, as programs usually append it) contains one of them.
 var HotWords = []string{"pricing", "quote", "buy", "purchase", "demo"}
 
-// Rating is the deterministic classification of a message.
+// Rating is the deterministic classification of a request's text.
 func Rating(text string) string {
-	lower := strings.ToLower(text)
+	if strings.Contains(text, ColdMessage) {
+		return "COLD"
+	}
+	if strings.Contains(text, HotMessage) {
+		return "HOT"
+	}
+	paragraphs := strings.Split(strings.TrimSpace(text), "\n\n")
+	lower := strings.ToLower(paragraphs[len(paragraphs)-1])
 	for _, word := range HotWords {
 		if strings.Contains(lower, word) {
 			return "HOT"

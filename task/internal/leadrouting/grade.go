@@ -34,8 +34,8 @@ var checks = []string{checkStarts, checkRejects, checkHotResponse, checkHubSpotC
 type hotLead struct{ email, first, last, company, message, industry string }
 
 var (
-	newLead      = hotLead{"bob@example.com", "Bob", "Baker", "Acme Corp", "Can you send pricing for 50 seats?", "Manufacturing"}
-	existingLead = hotLead{seededEmail, "Alicia", "Archer", "Tiny Startup", "Just browsing your blog.", "Unknown"}
+	newLead      = hotLead{"bob@example.com", "Bob", "Baker", "Acme Corp", HotMessage, "Manufacturing"}
+	existingLead = hotLead{seededEmail, "Alicia", "Archer", "Tiny Startup", ColdMessage, "Unknown"}
 )
 
 type grader struct {
