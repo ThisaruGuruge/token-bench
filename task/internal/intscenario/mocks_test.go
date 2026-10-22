@@ -82,10 +82,18 @@ func TestOpenAIShapedAndOllamaAnswerPlainAndToolRequests(t *testing.T) {
 func TestPagerDutyAndMandrillValidateLikeTheRealAPIs(t *testing.T) {
 	pager := PagerDutyHandler(&Recorder{})
 	incident := `{"incident":{"type":"incident","title":"Poison","service":{"id":"` + PagerDutyService + `","type":"service_reference"}}}`
-	if status, _ := do(t, pager, "POST", "/incidents", incident, nil); status != http.StatusBadRequest {
+	authorized := map[string]string{"Authorization": PagerDutyToken}
+	if status, _ := do(t, pager, "POST", "/incidents", incident, map[string]string{"From": "ops@example.com"}); status != http.StatusUnauthorized {
+		t.Errorf("missing token must be 401, got %d", status)
+	}
+	if status, _ := do(t, pager, "POST", "/incidents", incident, authorized); status != http.StatusBadRequest {
 		t.Errorf("missing From must be 400, got %d", status)
 	}
-	if status, body := do(t, pager, "POST", "/incidents", incident, map[string]string{"From": "ops@example.com"}); status != http.StatusCreated || !strings.Contains(body, `"status":"triggered"`) {
+	untyped := strings.Replace(incident, `,"type":"service_reference"`, "", 1)
+	if status, _ := do(t, pager, "POST", "/incidents", untyped, map[string]string{"Authorization": PagerDutyToken, "From": "ops@example.com"}); status != http.StatusBadRequest {
+		t.Errorf("a service without its reference type must be 400, got %d", status)
+	}
+	if status, body := do(t, pager, "POST", "/incidents", incident, map[string]string{"Authorization": PagerDutyToken, "From": "ops@example.com"}); status != http.StatusCreated || !strings.Contains(body, `"status":"triggered"`) {
 		t.Errorf("incident: %d %s", status, body)
 	}
 	mandrill := MandrillHandler(&Recorder{})

@@ -41,6 +41,7 @@ func ServiceTasks() []Task {
 	return []Task{
 		NewCheckoutSync(), NewClaimCheck(), NewContentBasedRouter(), NewContentEnricher(),
 		NewDeadLetterChannel(), NewMultiConsumer(), NewScatterGather(), NewLeadRouting(),
+		NewOrderSync(), NewEventBridge(), NewGraphService(),
 	}
 }
 

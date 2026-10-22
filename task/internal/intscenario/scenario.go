@@ -42,6 +42,8 @@ type Sidecar struct {
 	Env  []string
 	// Port is the container port also published on 127.0.0.1 for the grader.
 	Port string
+	// Arm64 pins the image to linux/arm64 (rabbitmq:3.13-alpine crashes at boot without the flag).
+	Arm64 bool
 	// Mock marks a mock API (MockImage, -service Alias, linux/arm64).
 	Mock bool
 	// Ready waits until the sidecar answers; addr is its published host:port.
@@ -165,6 +167,9 @@ func (h *Handle) start(ctx context.Context, sidecar Sidecar) error {
 	env.containers = append(env.containers, name)
 	arguments := []string{"run", "-d", "--rm", "--name", name, "--network", env.Network, "--network-alias", sidecar.Alias}
 	port := sidecar.Port
+	if sidecar.Arm64 {
+		arguments = append(arguments, "--platform", platform)
+	}
 	if sidecar.Mock {
 		arguments = append(arguments, "--platform", platform)
 		port = MockPort

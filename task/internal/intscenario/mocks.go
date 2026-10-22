@@ -50,8 +50,12 @@ func (r *Recorder) Reset() {
 }
 
 func writeJSON(writer http.ResponseWriter, status int, value any) {
+	writeBody(writer, status, "application/json", value)
+}
+
+func writeBody(writer http.ResponseWriter, status int, contentType string, value any) {
 	body, _ := json.Marshal(value)
-	writer.Header().Set("Content-Type", "application/json")
+	writer.Header().Set("Content-Type", contentType)
 	writer.WriteHeader(status)
 	_, _ = writer.Write(body)
 }
@@ -145,7 +149,7 @@ func PricingHandler(recorder *Recorder, flakiness *Flakiness) http.Handler {
 			}
 		}
 		if strings.Contains(payload.Query, "prices") {
-			var rows []any
+			rows := []any{}
 			for _, sku := range stringListVariable(payload, "skus") {
 				if price, ok := Prices[sku]; ok {
 					rows = append(rows, selected(map[string]any{"sku": sku, "price": price}, selection(payload.Query, "prices"), "sku", "price"))
@@ -207,25 +211,29 @@ func selected(row map[string]any, query string, fields ...string) map[string]any
 // FraudKey is the licence key the fraud mock accepts.
 const FraudKey = "fraud-test-key"
 
+// fraudContentType is what the real service sends: the connector returns the body as a string.
+const fraudContentType = "text/plain; charset=utf-8"
+
 // FraudRejectIP is screened as REJECT; every other address is APPROVE.
 const FraudRejectIP = "203.0.113.66"
 
-// FraudHandler serves GET /v1/order/screen as the real API does: the answer is
-// a JSON document in the body.
+// FraudHandler serves /v1/order/screen as the real API does: the connector posts the
+// parameters as a form and the answer is a JSON document in the body.
 func FraudHandler(recorder *Recorder) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/order/screen", func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc("/v1/order/screen", func(writer http.ResponseWriter, request *http.Request) {
 		recorder.Record(request)
-		query := request.URL.Query()
+		_ = request.ParseForm()
+		query := request.Form
 		if query.Get("key") != FraudKey {
-			writeJSON(writer, http.StatusOK, map[string]any{"error": map[string]any{"error_code": "400", "error_message": "INVALID API KEY"}})
+			writeBody(writer, http.StatusOK, fraudContentType, map[string]any{"error": map[string]any{"error_code": "400", "error_message": "INVALID API KEY"}})
 			return
 		}
 		status, score := "APPROVE", 12
 		if query.Get("ip") == FraudRejectIP {
 			status, score = "REJECT", 98
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{
+		writeBody(writer, http.StatusOK, fraudContentType, map[string]any{
 			"fraudlabspro_id": "20261022-FLP001", "ip_address": query.Get("ip"), "ip_country": "US",
 			"fraudlabspro_score": score, "fraudlabspro_distribution": score, "fraudlabspro_status": status,
 			"fraudlabspro_credits": 499,
@@ -405,16 +413,26 @@ func CustomersHandler(recorder *Recorder) http.Handler {
 // PagerDutyService is the service id incidents must reference.
 const PagerDutyService = "PSVC001"
 
+// PagerDutyToken is the API token the PagerDuty mock requires.
+const PagerDutyToken = "Token token=pd-test-key"
+
 // PagerDutyHandler serves POST /incidents; like the real API it insists on the
-// From header and the incident body's type and service.
+// token, the From header and the incident body's type and service reference.
 func PagerDutyHandler(recorder *Recorder) http.Handler {
 	mux := http.NewServeMux()
 	var mu sync.Mutex
 	count := 0
+	invalid := func(writer http.ResponseWriter, problem string) {
+		writeJSON(writer, http.StatusBadRequest, map[string]any{"error": map[string]any{"message": "Invalid Input Provided", "code": 2001, "errors": []string{problem}}})
+	}
 	mux.HandleFunc("POST /incidents", func(writer http.ResponseWriter, request *http.Request) {
 		body := recorder.Record(request)
+		if request.Header.Get("Authorization") != PagerDutyToken {
+			writeJSON(writer, http.StatusUnauthorized, map[string]any{"error": map[string]any{"message": "Unauthorized", "code": 2006}})
+			return
+		}
 		if request.Header.Get("From") == "" {
-			writeJSON(writer, http.StatusBadRequest, map[string]any{"error": map[string]any{"message": "Invalid Input Provided", "code": 2001, "errors": []string{"From header is required"}}})
+			invalid(writer, "From header is required")
 			return
 		}
 		var payload struct {
@@ -427,8 +445,18 @@ func PagerDutyHandler(recorder *Recorder) http.Handler {
 				} `json:"service"`
 			} `json:"incident"`
 		}
-		if json.Unmarshal(body, &payload) != nil || payload.Incident.Type != "incident" || payload.Incident.Title == "" || payload.Incident.Service.ID == "" {
-			writeJSON(writer, http.StatusBadRequest, map[string]any{"error": map[string]any{"message": "Invalid Input Provided", "code": 2001, "errors": []string{"incident type, title and service are required"}}})
+		switch {
+		case json.Unmarshal(body, &payload) != nil:
+			invalid(writer, "body is not valid JSON")
+			return
+		case payload.Incident.Type != "incident":
+			invalid(writer, "incident.type must be \"incident\"")
+			return
+		case payload.Incident.Title == "":
+			invalid(writer, "incident.title is required")
+			return
+		case payload.Incident.Service.ID == "" || payload.Incident.Service.Type != "service_reference":
+			invalid(writer, "incident.service must be a service_reference with an id")
 			return
 		}
 		mu.Lock()

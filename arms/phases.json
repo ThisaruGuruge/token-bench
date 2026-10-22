@@ -254,5 +254,50 @@
     "runs": 2,
     "model": "opus",
     "maxBudgetUsd": 20
+  },
+  "gi2-measure": {
+    "description": "Round 2 integration measure: 3 harder scenarios x GAI/GBI x 1, Sonnet.",
+    "arms": [
+      "GAI",
+      "GBI"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 1,
+    "model": "sonnet",
+    "maxBudgetUsd": 6
+  },
+  "gi2-sonnet": {
+    "description": "Round 2 integration: 3 scenarios x GAI/GBI x 3, Sonnet.",
+    "arms": [
+      "GAI",
+      "GBI"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 3,
+    "model": "sonnet",
+    "maxBudgetUsd": 6
+  },
+  "gi2-opus": {
+    "description": "Round 2 integration: 3 scenarios x GAI/GBI x 1, Opus.",
+    "arms": [
+      "GAI",
+      "GBI"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 1,
+    "model": "opus",
+    "maxBudgetUsd": 15
   }
 }

@@ -1,0 +1,1164 @@
+[
+ {
+  "id": "r2-overview-graphql",
+  "A": [
+   "ballerina/graphql"
+  ],
+  "B": [
+   "package",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "r2-client-graphql",
+  "A": [
+   "ballerina/graphql",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "r2-service-graphql",
+  "A": [
+   "ballerina/graphql",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "r2-type-graphql",
+  "A": [
+   "ballerina/graphql",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "r2-readme-graphql",
+  "A": [
+   "ballerina/graphql",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "r2-class-graphql",
+  "A": [
+   "ballerina/graphql",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "r2-function-graphql",
+  "A": [
+   "ballerina/graphql",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerina/graphql"
+  ]
+ },
+ {
+  "id": "r2-overview-mqtt",
+  "A": [
+   "ballerina/mqtt"
+  ],
+  "B": [
+   "package",
+   "ballerina/mqtt"
+  ]
+ },
+ {
+  "id": "r2-client-mqtt",
+  "A": [
+   "ballerina/mqtt",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerina/mqtt"
+  ]
+ },
+ {
+  "id": "r2-service-mqtt",
+  "A": [
+   "ballerina/mqtt",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerina/mqtt"
+  ]
+ },
+ {
+  "id": "r2-type-mqtt",
+  "A": [
+   "ballerina/mqtt",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerina/mqtt"
+  ]
+ },
+ {
+  "id": "r2-readme-mqtt",
+  "A": [
+   "ballerina/mqtt",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/mqtt"
+  ]
+ },
+ {
+  "id": "r2-class-mqtt",
+  "A": [
+   "ballerina/mqtt",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerina/mqtt"
+  ]
+ },
+ {
+  "id": "r2-function-mqtt",
+  "A": [
+   "ballerina/mqtt",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerina/mqtt"
+  ]
+ },
+ {
+  "id": "r2-overview-sql",
+  "A": [
+   "ballerina/sql"
+  ],
+  "B": [
+   "package",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "r2-client-sql",
+  "A": [
+   "ballerina/sql",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "r2-service-sql",
+  "A": [
+   "ballerina/sql",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "r2-type-sql",
+  "A": [
+   "ballerina/sql",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "r2-readme-sql",
+  "A": [
+   "ballerina/sql",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "r2-class-sql",
+  "A": [
+   "ballerina/sql",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "r2-function-sql",
+  "A": [
+   "ballerina/sql",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerina/sql"
+  ]
+ },
+ {
+  "id": "r2-overview-ai.mistral",
+  "A": [
+   "ballerinax/ai.mistral"
+  ],
+  "B": [
+   "package",
+   "ballerinax/ai.mistral"
+  ]
+ },
+ {
+  "id": "r2-client-ai.mistral",
+  "A": [
+   "ballerinax/ai.mistral",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/ai.mistral"
+  ]
+ },
+ {
+  "id": "r2-service-ai.mistral",
+  "A": [
+   "ballerinax/ai.mistral",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/ai.mistral"
+  ]
+ },
+ {
+  "id": "r2-type-ai.mistral",
+  "A": [
+   "ballerinax/ai.mistral",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/ai.mistral"
+  ]
+ },
+ {
+  "id": "r2-readme-ai.mistral",
+  "A": [
+   "ballerinax/ai.mistral",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/ai.mistral"
+  ]
+ },
+ {
+  "id": "r2-class-ai.mistral",
+  "A": [
+   "ballerinax/ai.mistral",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/ai.mistral"
+  ]
+ },
+ {
+  "id": "r2-function-ai.mistral",
+  "A": [
+   "ballerinax/ai.mistral",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/ai.mistral"
+  ]
+ },
+ {
+  "id": "r2-overview-ai.ollama",
+  "A": [
+   "ballerinax/ai.ollama"
+  ],
+  "B": [
+   "package",
+   "ballerinax/ai.ollama"
+  ]
+ },
+ {
+  "id": "r2-client-ai.ollama",
+  "A": [
+   "ballerinax/ai.ollama",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/ai.ollama"
+  ]
+ },
+ {
+  "id": "r2-service-ai.ollama",
+  "A": [
+   "ballerinax/ai.ollama",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/ai.ollama"
+  ]
+ },
+ {
+  "id": "r2-type-ai.ollama",
+  "A": [
+   "ballerinax/ai.ollama",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/ai.ollama"
+  ]
+ },
+ {
+  "id": "r2-readme-ai.ollama",
+  "A": [
+   "ballerinax/ai.ollama",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/ai.ollama"
+  ]
+ },
+ {
+  "id": "r2-class-ai.ollama",
+  "A": [
+   "ballerinax/ai.ollama",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/ai.ollama"
+  ]
+ },
+ {
+  "id": "r2-function-ai.ollama",
+  "A": [
+   "ballerinax/ai.ollama",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/ai.ollama"
+  ]
+ },
+ {
+  "id": "r2-overview-rabbitmq",
+  "A": [
+   "ballerinax/rabbitmq"
+  ],
+  "B": [
+   "package",
+   "ballerinax/rabbitmq"
+  ]
+ },
+ {
+  "id": "r2-client-rabbitmq",
+  "A": [
+   "ballerinax/rabbitmq",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/rabbitmq"
+  ]
+ },
+ {
+  "id": "r2-service-rabbitmq",
+  "A": [
+   "ballerinax/rabbitmq",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/rabbitmq"
+  ]
+ },
+ {
+  "id": "r2-type-rabbitmq",
+  "A": [
+   "ballerinax/rabbitmq",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/rabbitmq"
+  ]
+ },
+ {
+  "id": "r2-readme-rabbitmq",
+  "A": [
+   "ballerinax/rabbitmq",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/rabbitmq"
+  ]
+ },
+ {
+  "id": "r2-class-rabbitmq",
+  "A": [
+   "ballerinax/rabbitmq",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/rabbitmq"
+  ]
+ },
+ {
+  "id": "r2-function-rabbitmq",
+  "A": [
+   "ballerinax/rabbitmq",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/rabbitmq"
+  ]
+ },
+ {
+  "id": "r2-overview-nats",
+  "A": [
+   "ballerinax/nats"
+  ],
+  "B": [
+   "package",
+   "ballerinax/nats"
+  ]
+ },
+ {
+  "id": "r2-client-nats",
+  "A": [
+   "ballerinax/nats",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/nats"
+  ]
+ },
+ {
+  "id": "r2-service-nats",
+  "A": [
+   "ballerinax/nats",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/nats"
+  ]
+ },
+ {
+  "id": "r2-type-nats",
+  "A": [
+   "ballerinax/nats",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/nats"
+  ]
+ },
+ {
+  "id": "r2-readme-nats",
+  "A": [
+   "ballerinax/nats",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/nats"
+  ]
+ },
+ {
+  "id": "r2-class-nats",
+  "A": [
+   "ballerinax/nats",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/nats"
+  ]
+ },
+ {
+  "id": "r2-function-nats",
+  "A": [
+   "ballerinax/nats",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/nats"
+  ]
+ },
+ {
+  "id": "r2-overview-pagerduty",
+  "A": [
+   "ballerinax/pagerduty"
+  ],
+  "B": [
+   "package",
+   "ballerinax/pagerduty"
+  ]
+ },
+ {
+  "id": "r2-client-pagerduty",
+  "A": [
+   "ballerinax/pagerduty",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/pagerduty"
+  ]
+ },
+ {
+  "id": "r2-service-pagerduty",
+  "A": [
+   "ballerinax/pagerduty",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/pagerduty"
+  ]
+ },
+ {
+  "id": "r2-type-pagerduty",
+  "A": [
+   "ballerinax/pagerduty",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/pagerduty"
+  ]
+ },
+ {
+  "id": "r2-readme-pagerduty",
+  "A": [
+   "ballerinax/pagerduty",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/pagerduty"
+  ]
+ },
+ {
+  "id": "r2-class-pagerduty",
+  "A": [
+   "ballerinax/pagerduty",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/pagerduty"
+  ]
+ },
+ {
+  "id": "r2-function-pagerduty",
+  "A": [
+   "ballerinax/pagerduty",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/pagerduty"
+  ]
+ },
+ {
+  "id": "r2-overview-mailchimp.transactional",
+  "A": [
+   "ballerinax/mailchimp.transactional"
+  ],
+  "B": [
+   "package",
+   "ballerinax/mailchimp.transactional"
+  ]
+ },
+ {
+  "id": "r2-client-mailchimp.transactional",
+  "A": [
+   "ballerinax/mailchimp.transactional",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/mailchimp.transactional"
+  ]
+ },
+ {
+  "id": "r2-service-mailchimp.transactional",
+  "A": [
+   "ballerinax/mailchimp.transactional",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/mailchimp.transactional"
+  ]
+ },
+ {
+  "id": "r2-type-mailchimp.transactional",
+  "A": [
+   "ballerinax/mailchimp.transactional",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/mailchimp.transactional"
+  ]
+ },
+ {
+  "id": "r2-readme-mailchimp.transactional",
+  "A": [
+   "ballerinax/mailchimp.transactional",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/mailchimp.transactional"
+  ]
+ },
+ {
+  "id": "r2-class-mailchimp.transactional",
+  "A": [
+   "ballerinax/mailchimp.transactional",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/mailchimp.transactional"
+  ]
+ },
+ {
+  "id": "r2-function-mailchimp.transactional",
+  "A": [
+   "ballerinax/mailchimp.transactional",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/mailchimp.transactional"
+  ]
+ },
+ {
+  "id": "r2-overview-fraudlabspro.frauddetection",
+  "A": [
+   "ballerinax/fraudlabspro.frauddetection"
+  ],
+  "B": [
+   "package",
+   "ballerinax/fraudlabspro.frauddetection"
+  ]
+ },
+ {
+  "id": "r2-client-fraudlabspro.frauddetection",
+  "A": [
+   "ballerinax/fraudlabspro.frauddetection",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/fraudlabspro.frauddetection"
+  ]
+ },
+ {
+  "id": "r2-service-fraudlabspro.frauddetection",
+  "A": [
+   "ballerinax/fraudlabspro.frauddetection",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/fraudlabspro.frauddetection"
+  ]
+ },
+ {
+  "id": "r2-type-fraudlabspro.frauddetection",
+  "A": [
+   "ballerinax/fraudlabspro.frauddetection",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/fraudlabspro.frauddetection"
+  ]
+ },
+ {
+  "id": "r2-readme-fraudlabspro.frauddetection",
+  "A": [
+   "ballerinax/fraudlabspro.frauddetection",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/fraudlabspro.frauddetection"
+  ]
+ },
+ {
+  "id": "r2-class-fraudlabspro.frauddetection",
+  "A": [
+   "ballerinax/fraudlabspro.frauddetection",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/fraudlabspro.frauddetection"
+  ]
+ },
+ {
+  "id": "r2-function-fraudlabspro.frauddetection",
+  "A": [
+   "ballerinax/fraudlabspro.frauddetection",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/fraudlabspro.frauddetection"
+  ]
+ },
+ {
+  "id": "r2-overview-postgresql",
+  "A": [
+   "ballerinax/postgresql"
+  ],
+  "B": [
+   "package",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "r2-client-postgresql",
+  "A": [
+   "ballerinax/postgresql",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "r2-service-postgresql",
+  "A": [
+   "ballerinax/postgresql",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "r2-type-postgresql",
+  "A": [
+   "ballerinax/postgresql",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "r2-readme-postgresql",
+  "A": [
+   "ballerinax/postgresql",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "r2-class-postgresql",
+  "A": [
+   "ballerinax/postgresql",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "r2-function-postgresql",
+  "A": [
+   "ballerinax/postgresql",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/postgresql"
+  ]
+ },
+ {
+  "id": "r2-overview-postgresql.driver",
+  "A": [
+   "ballerinax/postgresql.driver"
+  ],
+  "B": [
+   "package",
+   "ballerinax/postgresql.driver"
+  ]
+ },
+ {
+  "id": "r2-client-postgresql.driver",
+  "A": [
+   "ballerinax/postgresql.driver",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/postgresql.driver"
+  ]
+ },
+ {
+  "id": "r2-service-postgresql.driver",
+  "A": [
+   "ballerinax/postgresql.driver",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/postgresql.driver"
+  ]
+ },
+ {
+  "id": "r2-type-postgresql.driver",
+  "A": [
+   "ballerinax/postgresql.driver",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/postgresql.driver"
+  ]
+ },
+ {
+  "id": "r2-readme-postgresql.driver",
+  "A": [
+   "ballerinax/postgresql.driver",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/postgresql.driver"
+  ]
+ },
+ {
+  "id": "r2-class-postgresql.driver",
+  "A": [
+   "ballerinax/postgresql.driver",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/postgresql.driver"
+  ]
+ },
+ {
+  "id": "r2-function-postgresql.driver",
+  "A": [
+   "ballerinax/postgresql.driver",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/postgresql.driver"
+  ]
+ },
+ {
+  "id": "r2-overview-mysql",
+  "A": [
+   "ballerinax/mysql"
+  ],
+  "B": [
+   "package",
+   "ballerinax/mysql"
+  ]
+ },
+ {
+  "id": "r2-client-mysql",
+  "A": [
+   "ballerinax/mysql",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/mysql"
+  ]
+ },
+ {
+  "id": "r2-service-mysql",
+  "A": [
+   "ballerinax/mysql",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/mysql"
+  ]
+ },
+ {
+  "id": "r2-type-mysql",
+  "A": [
+   "ballerinax/mysql",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/mysql"
+  ]
+ },
+ {
+  "id": "r2-readme-mysql",
+  "A": [
+   "ballerinax/mysql",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/mysql"
+  ]
+ },
+ {
+  "id": "r2-class-mysql",
+  "A": [
+   "ballerinax/mysql",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/mysql"
+  ]
+ },
+ {
+  "id": "r2-function-mysql",
+  "A": [
+   "ballerinax/mysql",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/mysql"
+  ]
+ },
+ {
+  "id": "r2-overview-mysql.driver",
+  "A": [
+   "ballerinax/mysql.driver"
+  ],
+  "B": [
+   "package",
+   "ballerinax/mysql.driver"
+  ]
+ },
+ {
+  "id": "r2-client-mysql.driver",
+  "A": [
+   "ballerinax/mysql.driver",
+   "client"
+  ],
+  "B": [
+   "client",
+   "-p",
+   "ballerinax/mysql.driver"
+  ]
+ },
+ {
+  "id": "r2-service-mysql.driver",
+  "A": [
+   "ballerinax/mysql.driver",
+   "service"
+  ],
+  "B": [
+   "service",
+   "-p",
+   "ballerinax/mysql.driver"
+  ]
+ },
+ {
+  "id": "r2-type-mysql.driver",
+  "A": [
+   "ballerinax/mysql.driver",
+   "type"
+  ],
+  "B": [
+   "type",
+   "-p",
+   "ballerinax/mysql.driver"
+  ]
+ },
+ {
+  "id": "r2-readme-mysql.driver",
+  "A": [
+   "ballerinax/mysql.driver",
+   "readme"
+  ],
+  "B": [
+   "readme",
+   "-p",
+   "ballerinax/mysql.driver"
+  ]
+ },
+ {
+  "id": "r2-class-mysql.driver",
+  "A": [
+   "ballerinax/mysql.driver",
+   "class"
+  ],
+  "B": [
+   "class",
+   "-p",
+   "ballerinax/mysql.driver"
+  ]
+ },
+ {
+  "id": "r2-function-mysql.driver",
+  "A": [
+   "ballerinax/mysql.driver",
+   "funcs"
+  ],
+  "B": [
+   "function",
+   "-p",
+   "ballerinax/mysql.driver"
+  ]
+ },
+ {
+  "id": "r2-http-interceptor",
+  "A": [
+   "ballerina/http",
+   "search",
+   "interceptor"
+  ],
+  "B": [
+   "search",
+   "interceptor",
+   "-p",
+   "ballerina/http"
+  ]
+ }
+]
