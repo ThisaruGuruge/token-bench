@@ -3,8 +3,9 @@
 # the image's own Ballerina home, identically for both arms.
 ARG ARM_IMAGE
 FROM ${ARM_IMAGE}
+ARG SKILL_PATCH=ballerina-skill-discover-neutral
 COPY --chown=node:node bench-plugin /opt/bench-plugin
 COPY --chown=node:node prepull /tmp/prepull
 RUN cd /tmp/prepull && bal build > /tmp/prepull.log 2>&1 || (cat /tmp/prepull.log; exit 1); \
     cd / && rm -rf /tmp/prepull /tmp/prepull.log
-LABEL org.token-bench.integration="round-1-and-2" org.token-bench.skill-patch="ballerina-skill-discover-neutral"
+LABEL org.token-bench.integration="round-1-and-2" org.token-bench.skill-patch="${SKILL_PATCH}"

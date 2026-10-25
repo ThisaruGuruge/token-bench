@@ -4,6 +4,8 @@
 #   build-images.sh base                      Linux Ballerina + Claude Code + the bal-calllog wrapper
 #   build-images.sh arm <GA|GB> <worktree>    the base plus that worktree's freshly built bal discover
 #   build-images.sh fake                      the base with a fake claude, for the $0 end-to-end test
+#   build-images.sh int <GA|GB>               the arm image plus the neutral-patched skill and the pre-pulled libraries
+#   build-images.sh int-notool                the base (no bal discover) plus the ORIGINAL skill and the pre-pulled libraries, tagged N-int
 #
 # The arm build refuses a dirty worktree and a bala older than its HEAD, uses
 # the worktree's built bala (BUILD_BALA=1 rebuilds it with Gradle, without
@@ -128,8 +130,24 @@ build_fake_int() {
   docker build --platform "linux/$GOARCH" -t token-bench-discover:fake-int "$context"
 }
 
+# build_int_notool is the tool-less integration image of the tool-impact study: the base image (no bal
+# discover) with the original, unpatched skill as a plugin and the same pre-pulled libraries. An arm that loads the
+# plugin gets "skill only"; an arm that does not gets "nothing".
+build_int_notool() {
+  local skills_repo="${TOKEN_BENCH_SKILLS_REPO:-$HOME/Projects/Ballerina/cli-improvements/benchmark/reference/ballerina-skills}"
+  docker image inspect "$BASE_IMAGE" >/dev/null 2>&1 || { echo "build the base first: $0 base" >&2; exit 2; }
+  mkdir -p "$context/bench-plugin/skills" "$context/bench-plugin/.claude-plugin" "$context/prepull"
+  cp -R "$skills_repo/skills/ballerina" "$context/bench-plugin/skills/"
+  printf '{"name":"ballerina","version":"1.0.0","description":"Ballerina skill (original, no bal discover)","author":{"name":"token-bench"}}\n' > "$context/bench-plugin/.claude-plugin/plugin.json"
+  cp "$ROOT/task/internal/leadrouting/prepull/Ballerina.toml" "$ROOT/task/internal/leadrouting/prepull/main.bal" "$context/prepull/"
+  docker build --platform "linux/$GOARCH" -f "$ROOT/docker/integration/Dockerfile.int" \
+    --build-arg "ARM_IMAGE=$BASE_IMAGE" --build-arg "SKILL_PATCH=none-original-skill" \
+    -t "token-bench-discover:N-int" "$context"
+}
+
 case "${1:-}" in
   base) build_base ;;
+  int-notool) build_int_notool ;;
   fake-int) build_fake_int ;;
   mock) build_mock ;;
   int) [[ "${2:-}" =~ ^G[AB]$ ]] || { echo "usage: $0 int <GA|GB>" >&2; exit 2; }; build_int "$2" ;;
