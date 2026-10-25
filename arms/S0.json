@@ -1,0 +1,13 @@
+{
+  "id": "S0",
+  "label": "tool-impact study: nothing (no skill, no bal discover)",
+  "discoverVisible": true,
+  "container": {
+    "image": "token-bench-discover:N-int"
+  },
+  "callLog": true,
+  "disallowedTools": [
+    "WebSearch",
+    "WebFetch"
+  ]
+}

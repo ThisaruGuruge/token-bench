@@ -1,0 +1,14 @@
+{
+  "id": "SS",
+  "label": "tool-impact study: skill only (original Ballerina skill, no bal discover)",
+  "discoverVisible": true,
+  "container": {
+    "image": "token-bench-discover:N-int",
+    "pluginDir": "/opt/bench-plugin"
+  },
+  "callLog": true,
+  "disallowedTools": [
+    "WebSearch",
+    "WebFetch"
+  ]
+}

@@ -341,5 +341,54 @@
     "runs": 4,
     "model": "haiku",
     "maxBudgetUsd": 1
+  },
+  "study-probe": {
+    "description": "Tool-impact study probe: order-sync x S0/SS/ST/SB x 1, Haiku; checks each arm's tools and skills (cap $1).",
+    "arms": [
+      "S0",
+      "SS",
+      "ST",
+      "SB"
+    ],
+    "scenarios": [
+      "order-sync"
+    ],
+    "runs": 1,
+    "model": "haiku",
+    "maxBudgetUsd": 1
+  },
+  "study-sonnet": {
+    "description": "Tool-impact study: 3 scenarios x S0/SS/ST/SB x 4, Sonnet (cap $2/run).",
+    "arms": [
+      "S0",
+      "SS",
+      "ST",
+      "SB"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 4,
+    "model": "sonnet",
+    "maxBudgetUsd": 2
+  },
+  "study-haiku": {
+    "description": "Tool-impact study: 3 scenarios x S0/SS/ST/SB x 4, Haiku (cap $1/run).",
+    "arms": [
+      "S0",
+      "SS",
+      "ST",
+      "SB"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 4,
+    "model": "haiku",
+    "maxBudgetUsd": 1
   }
 }

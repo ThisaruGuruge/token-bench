@@ -1,0 +1,17 @@
+{
+  "id": "SB",
+  "label": "tool-impact study: tool + skill (bal discover grammar B, neutral-patched skill)",
+  "discoverVisible": true,
+  "systemPromptFile": "hints/discover-neutral.md",
+  "container": {
+    "image": "token-bench-discover:GB-int",
+    "pluginDir": "/opt/bench-plugin"
+  },
+  "callLog": true,
+  "cacheSeed": "~/Projects/Ballerina/cli-improvements/benchmark/grammar/cache-seed-int/bal-discover",
+  "disallowedTools": [
+    "WebSearch",
+    "WebFetch"
+  ],
+  "grammar": "B"
+}

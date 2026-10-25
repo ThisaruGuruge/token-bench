@@ -1,0 +1,16 @@
+{
+  "id": "ST",
+  "label": "tool-impact study: tool only (bal discover grammar B, one-line hint, no skill)",
+  "discoverVisible": true,
+  "systemPromptFile": "hints/discover-neutral.md",
+  "container": {
+    "image": "token-bench-discover:GB-int"
+  },
+  "callLog": true,
+  "cacheSeed": "~/Projects/Ballerina/cli-improvements/benchmark/grammar/cache-seed-int/bal-discover",
+  "disallowedTools": [
+    "WebSearch",
+    "WebFetch"
+  ],
+  "grammar": "B"
+}
