@@ -1,0 +1,16 @@
+{
+  "id": "GBN",
+  "label": "discover grammar B, integration image, NO Ballerina skill (tool and one-line hint only)",
+  "discoverVisible": true,
+  "systemPromptFile": "hints/discover-neutral.md",
+  "container": {
+    "image": "token-bench-discover:GB-int"
+  },
+  "callLog": true,
+  "cacheSeed": "~/Projects/Ballerina/cli-improvements/benchmark/grammar/cache-seed-int/bal-discover",
+  "disallowedTools": [
+    "WebSearch",
+    "WebFetch"
+  ],
+  "grammar": "B"
+}

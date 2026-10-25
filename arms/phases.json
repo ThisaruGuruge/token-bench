@@ -299,5 +299,47 @@
     "runs": 1,
     "model": "opus",
     "maxBudgetUsd": 15
+  },
+  "gi3-probe": {
+    "description": "No-skill probe: order-sync x GAN x 1, Sonnet; checks the skill is absent (cap $2).",
+    "arms": [
+      "GAN"
+    ],
+    "scenarios": [
+      "order-sync"
+    ],
+    "runs": 1,
+    "model": "sonnet",
+    "maxBudgetUsd": 2
+  },
+  "gi3-sonnet": {
+    "description": "No-skill integration: 3 scenarios x GAN/GBN x 4, Sonnet (cap $2/run).",
+    "arms": [
+      "GAN",
+      "GBN"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 4,
+    "model": "sonnet",
+    "maxBudgetUsd": 2
+  },
+  "gi3-haiku": {
+    "description": "No-skill integration: 3 scenarios x GAN/GBN x 4, Haiku (cap $1/run).",
+    "arms": [
+      "GAN",
+      "GBN"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 4,
+    "model": "haiku",
+    "maxBudgetUsd": 1
   }
 }
