@@ -130,13 +130,13 @@ func PricingHandler(recorder *Recorder, flakiness *Flakiness) http.Handler {
 			writeJSON(writer, http.StatusBadRequest, map[string]any{"errors": []any{map[string]any{"message": "a query is required"}}})
 			return
 		}
-		if flakiness != nil && flakiness.failFirst(stringVariable(payload, "id")) {
+		if flakiness != nil && flakiness.failFirst(CustomerVariable(payload.Variables)) {
 			writeJSON(writer, http.StatusServiceUnavailable, map[string]any{"errors": []any{map[string]any{"message": "service unavailable"}}})
 			return
 		}
 		data := map[string]any{}
 		if strings.Contains(payload.Query, "customer") {
-			id := stringVariable(payload, "id")
+			id := CustomerVariable(payload.Variables)
 			if id == "" {
 				if match := quotedArgument.FindStringSubmatch(payload.Query); match != nil {
 					id = match[1]
@@ -163,11 +163,20 @@ func PricingHandler(recorder *Recorder, flakiness *Flakiness) http.Handler {
 	return mux
 }
 
-func stringVariable(payload struct {
-	Query     string         `json:"query"`
-	Variables map[string]any `json:"variables"`
-}, name string) string {
-	text, _ := payload.Variables[name].(string)
+// CustomerVariable returns the customer id a GraphQL request passes as a variable. The task does not name the
+// variable, so any single string-valued variable counts (list variables, such as the SKUs, never do).
+func CustomerVariable(variables map[string]any) string {
+	names := make([]string, 0, len(variables))
+	for name, value := range variables {
+		if _, ok := value.(string); ok {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	if len(names) == 0 {
+		return ""
+	}
+	text, _ := variables[names[0]].(string)
 	return text
 }
 

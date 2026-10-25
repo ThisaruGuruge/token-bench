@@ -414,7 +414,7 @@ func (g *grader) pricing() {
 		if request.Headers["Authorization"] != "Bearer "+intscenario.PricingToken {
 			g.checks.Fail(checkPricing, "Authorization header was "+request.Headers["Authorization"])
 		}
-		if _, ok := payload.Variables["id"].(string); !ok {
+		if intscenario.CustomerVariable(payload.Variables) == "" {
 			g.checks.Fail(checkPricing, "no customer id variable: "+intscenario.OneLine(request.Body))
 		}
 		if skus, ok := payload.Variables["skus"].([]any); !ok || len(skus) == 0 {
