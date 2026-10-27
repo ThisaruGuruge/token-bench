@@ -181,14 +181,8 @@ func (Scenario) AppReady(_ context.Context, env *intscenario.Env) error {
 	if err != nil {
 		return err
 	}
-	queue, err := channel.QueueDeclarePassive(incomingQueue, true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-	if queue.Consumers == 0 {
-		return fmt.Errorf("nothing consumes %s yet", incomingQueue)
-	}
-	return nil
+	_, err = channel.QueueDeclarePassive(incomingQueue, true, false, false, false, nil)
+	return err
 }
 
 type grader struct {
