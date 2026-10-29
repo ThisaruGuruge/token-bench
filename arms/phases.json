@@ -530,5 +530,20 @@
     "runs": 4,
     "model": "opus",
     "maxBudgetUsd": 5
+  },
+  "h-grammar": {
+    "description": "Haiku, no skill: 3 scenarios x GAN/GBN (B with the bare package coordinate) x 6 (cap $1/run); paired rerun of gi3-haiku on the package-first build.",
+    "arms": [
+      "GAN",
+      "GBN"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 6,
+    "model": "haiku",
+    "maxBudgetUsd": 1
   }
 }
