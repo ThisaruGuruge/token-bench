@@ -390,5 +390,145 @@
     "runs": 4,
     "model": "haiku",
     "maxBudgetUsd": 1
+  },
+  "pf-haiku": {
+    "description": "Package-first rerun: 24 question tasks x GA/GB (B with the bare package coordinate) x 6, Haiku (cap $1).",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D01",
+      "dq-D02",
+      "dq-D03",
+      "dq-D04",
+      "dq-D05",
+      "dq-D06",
+      "dq-D07",
+      "dq-D08",
+      "dq-D09",
+      "dq-D10",
+      "dq-D11",
+      "dq-D12",
+      "dq-D13",
+      "dq-D14",
+      "dq-D15",
+      "dq-D16",
+      "dq-D17",
+      "dq-D18",
+      "dq-D19",
+      "dq-D20",
+      "dq-D21",
+      "dq-D22",
+      "dq-D23",
+      "dq-D24"
+    ],
+    "runs": 6,
+    "model": "haiku",
+    "maxBudgetUsd": 1
+  },
+  "pf-sonnet": {
+    "description": "Package-first rerun: 24 question tasks x GA/GB x 6, Sonnet (cap $3).",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D01",
+      "dq-D02",
+      "dq-D03",
+      "dq-D04",
+      "dq-D05",
+      "dq-D06",
+      "dq-D07",
+      "dq-D08",
+      "dq-D09",
+      "dq-D10",
+      "dq-D11",
+      "dq-D12",
+      "dq-D13",
+      "dq-D14",
+      "dq-D15",
+      "dq-D16",
+      "dq-D17",
+      "dq-D18",
+      "dq-D19",
+      "dq-D20",
+      "dq-D21",
+      "dq-D22",
+      "dq-D23",
+      "dq-D24"
+    ],
+    "runs": 6,
+    "model": "sonnet",
+    "maxBudgetUsd": 3
+  },
+  "pf-opus": {
+    "description": "Package-first rerun: 24 question tasks x GA/GB x 3, Opus (cap $5).",
+    "arms": [
+      "GA",
+      "GB"
+    ],
+    "scenarios": [
+      "dq-D01",
+      "dq-D02",
+      "dq-D03",
+      "dq-D04",
+      "dq-D05",
+      "dq-D06",
+      "dq-D07",
+      "dq-D08",
+      "dq-D09",
+      "dq-D10",
+      "dq-D11",
+      "dq-D12",
+      "dq-D13",
+      "dq-D14",
+      "dq-D15",
+      "dq-D16",
+      "dq-D17",
+      "dq-D18",
+      "dq-D19",
+      "dq-D20",
+      "dq-D21",
+      "dq-D22",
+      "dq-D23",
+      "dq-D24"
+    ],
+    "runs": 3,
+    "model": "opus",
+    "maxBudgetUsd": 5
+  },
+  "o-grammar": {
+    "description": "Opus, no skill: 3 scenarios x GAN/GBN (B with the bare package coordinate) x 6 (cap $5/run).",
+    "arms": [
+      "GAN",
+      "GBN"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 6,
+    "model": "opus",
+    "maxBudgetUsd": 5
+  },
+  "o-study": {
+    "description": "Tool-impact study on Opus: 3 scenarios x S0/SS/ST/SB x 4 (cap $5/run).",
+    "arms": [
+      "S0",
+      "SS",
+      "ST",
+      "SB"
+    ],
+    "scenarios": [
+      "order-sync",
+      "event-bridge",
+      "graph-service"
+    ],
+    "runs": 4,
+    "model": "opus",
+    "maxBudgetUsd": 5
   }
 }
